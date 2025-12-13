@@ -1,0 +1,34 @@
+# Production dependencies
+express
+cors
+dotenv
+morgan
+mysql2
+jsonwebtoken
+bcrypt
+cookie-parser
+ioredis
+multer
+helmet
+xss-clean
+express-rate-limit
+hpp
+path
+fs
+uuid
+compression
+
+# Development dependencies
+nodemon
+cross-env
+
+# Optional / extra dependencies
+joi
+express-validator
+twilio
+nodemailer
+
+
+
+
+npm install express cors dotenv morgan mysql2 jsonwebtoken bcrypt cookie-parser ioredis multer helmet xss-clean express-rate-limit hpp path fs uuid joi express-validator twilio nodemailer && npm install --save-dev nodemon cross-env
