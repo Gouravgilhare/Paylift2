@@ -29,4 +29,12 @@ router.post(
   extractController.extractNumberPlate
 );
 
+// 🔹 Driving License Image
+router.post(
+  "/driving-license",
+  verifyToken,
+  upload.single("document"),
+  extractController.extractDLFromImage
+);
+
 export default router;
