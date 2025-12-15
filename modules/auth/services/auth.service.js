@@ -3,50 +3,70 @@ import redis from "../../../config/redisClient.js";
 import db from "../../../config/db.config.js";
 import "../../../config/env.config.js";
 
+/* ========================================================================== */
+/*                               OTP HELPERS                                  */
+/* ========================================================================== */
+
 export const generateOtp = () => {
   return Math.floor(1000 + Math.random() * 9000).toString();
 };
 
-export const saveOtp = async (mobile, otp) => {
-  await redis.set(`otp:${mobile}`, otp, "EX", 1000); // 5 min
+export const saveOtp = async (key, otp) => {
+  // 5 minutes expiry
+  await redis.set(`otp:${key}`, otp, "EX", 300);
 };
 
-export const verifyStoredOtp = async (mobile) => {
-  return await redis.get(`otp:${mobile}`);
+export const verifyStoredOtp = async (key) => {
+  return await redis.get(`otp:${key}`);
 };
 
-export const deleteOtp = async (mobile) => {
-  await redis.del(`otp:${mobile}`);
+export const deleteOtp = async (key) => {
+  await redis.del(`otp:${key}`);
 };
 
-export const generateAccessToken = (payload) =>
-  jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "15m" });
+/* ========================================================================== */
+/*                               JWT HELPERS                                  */
+/* ========================================================================== */
 
-export const generateRefreshToken = (payload) =>
-  jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE_IN || "30d",
+export const generateAccessToken = (payload) => {
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: "15m",
   });
-
-export const storeRefreshToken = async (mobile, token) => {
-  await redis.set(`refresh:${mobile}`, token, "EX", 30 * 24 * 3600);
 };
 
-export const getStoredRefreshToken = async (mobile) => {
-  return await redis.get(`refresh:${mobile}`);
+export const generateRefreshToken = (payload) => {
+  return jwt.sign(payload, process.env.JWT_REFRESH_SECRET, {
+    expiresIn: "30d",
+  });
 };
 
-export const deleteRefreshToken = async (mobile) => {
-  await redis.del(`refresh:${mobile}`);
+/* ========================================================================== */
+/*                            REFRESH TOKEN STORE                             */
+/* ========================================================================== */
+
+export const storeRefreshToken = async (key, token) => {
+  await redis.set(`refresh:${key}`, token, "EX", 30 * 24 * 60 * 60);
 };
 
-/* ------------------------------ Create User ------------------------------ */
+export const getStoredRefreshToken = async (key) => {
+  return await redis.get(`refresh:${key}`);
+};
+
+export const deleteRefreshToken = async (key) => {
+  await redis.del(`refresh:${key}`);
+};
+
+/* ========================================================================== */
+/*                               USER SERVICES                                */
+/* ========================================================================== */
+
 export const createOrGetUser = async (mobile) => {
-  let [rows] = await db.query(
+  const [rows] = await db.query(
     "SELECT * FROM user_table WHERE mobile_number = ?",
     [mobile]
   );
 
-  if (rows.length > 0) return rows[0];
+  if (rows.length) return rows[0];
 
   const [result] = await db.query(
     "INSERT INTO user_table (mobile_number, firstname, lastname) VALUES (?, ?, ?)",
@@ -56,5 +76,18 @@ export const createOrGetUser = async (mobile) => {
   const [user] = await db.query("SELECT * FROM user_table WHERE userId = ?", [
     result.insertId,
   ]);
+
   return user[0];
+};
+
+/* ========================================================================== */
+/*                               ADMIN SERVICES                               */
+/* ========================================================================== */
+
+export const getAdminByEmail = async (email) => {
+  const [rows] = await db.query("SELECT * FROM admin_table WHERE email = ?", [
+    email,
+  ]);
+
+  return rows.length ? rows[0] : null;
 };

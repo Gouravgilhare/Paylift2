@@ -132,76 +132,70 @@ MAPPLS_CLIENT_SECRET=
 
 ---
 
-## Key Modules
+## Visual API Routes Map
 
-### 1️⃣ Auth Module
+```
+┌───────────────────────┐
+│       Auth Module      │
+└───────────────────────┘
+POST /api/auth/send-otp          → Send OTP
+POST /api/auth/verify-otp        → Verify OTP & issue JWT
+POST /api/auth/refresh-token     → Refresh access token
+POST /api/auth/logout            → Logout (requires token)
 
-- **Routes**: `modules/auth/routes/auth.routes.js`
-- **Controller**: `modules/auth/controllers/auth.controller.js`
-- **Service**: `modules/auth/services/auth.service.js`
-- **Middleware**: `modules/auth/middleware/auth.middleware.js`
-- **Features**:
-  - Send OTP
-  - Verify OTP and issue JWT (access & refresh token)
-  - Token refresh
+┌───────────────────────┐
+│       User Module      │
+└───────────────────────┘
+GET    /api/user/:userid                   → Get user by ID
+POST   /api/user/register                  → Register new user (file upload)
+PUT    /api/user/update/:userid            → Update user (file upload)
+DELETE /api/user/:userid                   → Delete user
 
-### 2️⃣ User Module
+┌───────────────────────┐
+│       Rider Module     │
+└───────────────────────┘
+GET    /api/rider/:riderid                 → Get rider by ID
+GET    /api/rider/user/:userid             → Get rider by user ID
+POST   /api/rider/register                 → Register rider (dl_image)
+PUT    /api/rider/update/:riderid         → Update rider (dl_image)
+DELETE /api/rider/delete/:riderid         → Delete rider
 
-- **Routes**: `modules/user/routes/user.routes.js`
-- **Controller**: `modules/user/controllers/user.controller.js`
-- **Service**: `modules/user/services/user.service.js`
-- **Model**: `modules/user/models/user.model.js`
-- **Features**:
-  - Register user
-  - Update user (with image upload)
-  - Get user by ID
-  - Delete user
+┌───────────────────────┐
+│      Vehicle Module    │
+└───────────────────────┘
+POST   /api/vehicle/register               → Register vehicle (vehicle_image + rc_image)
+GET    /api/vehicle/:vehicleId             → Get vehicle by ID
+GET    /api/vehicle/rider/:riderId        → Get all vehicles of a rider
+PUT    /api/vehicle/update/:vehicleId     → Update vehicle (vehicle_image + rc_image)
+DELETE /api/vehicle/delete/:vehicleId     → Delete vehicle
 
-### 3️⃣ Rider Module
+┌───────────────────────┐
+│       Trip Module      │
+└───────────────────────┘
+POST   /api/trip/register                  → User requests a trip
+GET    /api/trip/:tripId                   → Get trip by ID
+PUT    /api/trip/assign/:tripId           → Rider accepts trip
+PUT    /api/trip/start/:tripId            → Start trip
+PUT    /api/trip/update/:tripId           → Update distance/time
+PUT    /api/trip/complete/:tripId         → Complete trip
+PUT    /api/trip/cancel/:tripId           → Cancel trip
 
-- **Routes**: `modules/rider/routes/rider.routes.js`
-- **Controller**: `modules/rider/controllers/rider.controller.js`
-- **Service**: `modules/rider/services/rider.service.js`
-- **Model**: `modules/rider/models/rider.model.js`
-- **Features**:
-  - Create/Update Rider profile
-  - Get Rider details
-  - Rider activation status
+┌───────────────────────┐
+│     Location Module    │
+└───────────────────────┘
+POST /api/location/live/update             → Update live location
+GET  /api/location/live/:entity_type/:entity_id → Get live location
+POST /api/location/history/add            → Add trip history
+GET  /api/location/history/:trip_id       → Get trip history
 
-### 4️⃣ Vehicle Module
-
-- **Routes**: `modules/vehicle/routes/vehicle.routes.js`
-- **Controller**: `modules/vehicle/controllers/vehicle.controller.js`
-- **Service**: `modules/vehicle/services/vehicle.service.js`
-- **Model**: `modules/vehicle/models/vehicle.model.js`
-- **Features**:
-  - Register vehicle
-  - Update vehicle info
-  - Vehicle activation status
-  - Image upload (RC, vehicle image)
-
-### 5️⃣ Trip Module
-
-- **Routes**: `modules/trips/routes/trip.routes.js`
-- **Controller**: `modules/trips/controllers/trip.controller.js`
-- **Service**: `modules/trips/services/trip.service.js`
-- **Model**: `modules/trips/models/trip.model.js`
-- **Features**:
-  - Trip request & assignment
-  - Update trip status (`requested`, `accepted`, `ongoing`, `completed`, `cancelled`)
-  - Calculate fare
-  - Track payment status
-
-### 6️⃣ Location Module
-
-- **Routes**: `modules/location/routes/location.routes.js`
-- **Controller**: `modules/location/controllers/location.controller.js`
-- **Service**: `modules/location/services/location.service.js`
-- **Model**: `modules/location/models/location.model.js`
-- **Features**:
-  - Live location updates for users/riders
-  - Location history
-  - Log old vs new positions
+┌───────────────────────┐
+│     Extract Module     │
+└───────────────────────┘
+POST /api/extract/insurance               → Extract insurance data from PDF
+POST /api/extract/rc-card                 → Extract RC card from image
+POST /api/extract/number-plate            → Extract vehicle number plate from image
+POST /api/extract/driving-license         → Extract DL number from image
+```
 
 ---
 

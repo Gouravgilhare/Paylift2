@@ -1,5 +1,22 @@
 import jwt from "jsonwebtoken";
 
+import { AppError } from "../../../middleware/error.handler.js";
+
+export const adminAuth = (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) throw new AppError("Unauthorized", 401);
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (decoded.role !== "admin") throw new AppError("Forbidden", 403);
+
+    req.admin = decoded;
+    next();
+  } catch (err) {
+    next(err);
+  }
+};
+
 export const verifyToken = (req, res, next) => {
   try {
     const authHeader = req.headers["authorization"];

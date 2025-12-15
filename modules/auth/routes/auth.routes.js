@@ -4,25 +4,33 @@ import {
   verifyOtp,
   refreshAccessToken,
   logout,
+
+  // ADMIN
+  sendAdminOtp,
+  verifyAdminOtp,
+  adminRefreshToken,
+  adminLogout,
 } from "../controller/auth.controller.js";
 
-import {
-  errorHandler,
-  AppError,
-  asyncHandler,
-} from "../../../middleware/error.handler.js";
+import { asyncHandler } from "../../../middleware/error.handler.js";
 import { verifyToken as authMiddleware } from "../middleware/auth.middleware.js";
 
 const router = express.Router();
 
-// Authentication routes
+/* ============================
+   USER AUTH
+============================ */
 router.post("/send-otp", asyncHandler(sendOtp));
 router.post("/verify-otp", asyncHandler(verifyOtp));
-
-// Token routes
 router.post("/refresh-token", asyncHandler(refreshAccessToken));
+router.post("/logout", authMiddleware, asyncHandler(logout));
 
-// Logout
-router.post("/logout", authMiddleware, logout);
+/* ============================
+   ADMIN AUTH (OTP BASED)
+============================ */
+router.post("/admin/send-otp", asyncHandler(sendAdminOtp));
+router.post("/admin/verify-otp", asyncHandler(verifyAdminOtp));
+router.post("/admin/refresh-token", asyncHandler(adminRefreshToken));
+router.post("/admin/logout", asyncHandler(adminLogout));
 
 export default router;
