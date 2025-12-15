@@ -28,6 +28,9 @@ const storage = multer.diskStorage({
       case "rc_image":
         folder = "RC";
         break;
+      case "document":
+        folder = "Documents"; // 👈 ADD THIS
+        break;
     }
 
     const uploadDir = path.join(BASE_UPLOAD_DIR, folder);
@@ -47,7 +50,12 @@ const storage = multer.diskStorage({
 
 // Cleaner & correct MIME list
 const fileFilter = (req, file, cb) => {
-  const allowedMimeTypes = ["image/jpeg", "image/png", "image/jpg"];
+  const allowedMimeTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/jpg",
+    "application/pdf",
+  ];
 
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
@@ -58,7 +66,7 @@ const fileFilter = (req, file, cb) => {
 
 // 1 MB limit
 const limits = {
-  fileSize: 1 * 1024 * 1024,
+  fileSize: 5 * 1024 * 1024, // 5 MB
 };
 
 const upload = multer({

@@ -21,6 +21,7 @@ import riderRoutes from "./modules/rider/routes/rider.routes.js";
 import vehicleRoutes from "./modules/vehicle/routes/vehicle.routes.js";
 import locationRoutes from "./modules/location/routes/location.routes.js";
 import tripRoutes from "./modules/trips/routes/trip.routes.js";
+import extracRoutes from "./modules/document-extract/routes/extract.routes.js";
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use("/api/riders", riderRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/location", locationRoutes);
 app.use("/api/trips", tripRoutes);
+app.use("/api/extract/", extracRoutes);
 
 // ================= BASIC HEALTH CHECK =================
 app.get("/", (req, res) => {

@@ -12,16 +12,14 @@ class LocationModel {
   async upsertLiveLocation(entity_id, entity_type, latitude, longitude) {
     const [result] = await pool.query(
       `
-      INSERT INTO ${this.liveTable} 
-      (entity_id, entity_type, latitude, longitude)
-      VALUES (?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE 
-        old_latitude = latitude,
-        old_longitude = longitude,
-        latitude = VALUES(latitude),
-        longitude = VALUES(longitude),
-        updated_at = CURRENT_TIMESTAMP
-      `,
+    INSERT INTO ${this.liveTable}
+    (entity_id, entity_type, latitude, longitude)
+    VALUES (?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+      latitude = VALUES(latitude),
+      longitude = VALUES(longitude),
+      updated_at = CURRENT_TIMESTAMP
+    `,
       [entity_id, entity_type, latitude, longitude]
     );
     return result;

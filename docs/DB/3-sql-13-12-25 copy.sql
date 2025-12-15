@@ -1,0 +1,577 @@
+-- ======================================================================
+-- Paylift - Advanced Production-ready SQL Schema + Routines
+-- MySQL (8.0+ recommended)
+-- ======================================================================
+
+DROP DATABASE IF EXISTS paylift_db;
+CREATE DATABASE paylift_db CHARACTER SET = 'utf8mb4' COLLATE = 'utf8mb4_unicode_ci';
+USE paylift_db;
+
+
+-- ======================================================================
+-- 1) CORE TABLES: users, riders, vehicles
+-- ======================================================================
+	CREATE TABLE user_table (
+	  userId INT AUTO_INCREMENT PRIMARY KEY,
+	  firstname VARCHAR(100) NOT NULL,
+	  lastname VARCHAR(100) NOT NULL,
+	  gender ENUM('Male','Female','Other') DEFAULT NULL,
+	  dob DATE,
+	  aadhar VARCHAR(15) UNIQUE,
+	  mobile_number VARCHAR(20) UNIQUE,
+	  email VARCHAR(150) UNIQUE,
+	  image_add VARCHAR(255),
+	  security_pin VARCHAR(255),
+	  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+	) ENGINE=InnoDB;
+
+	drop table user_table;
+
+	CREATE TABLE rider_table (
+	  riderId INT AUTO_INCREMENT PRIMARY KEY,
+	  userId INT NOT NULL,
+	  driving_license VARCHAR(50) UNIQUE,
+	  dl_image VARCHAR(255),
+	  is_active TINYINT(1) DEFAULT 1,
+	  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+	  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+	  CONSTRAINT fk_rider_user FOREIGN KEY (userId) REFERENCES user_table(userId) ON DELETE CASCADE ON UPDATE CASCADE
+	) ENGINE=InnoDB;
+
+CREATE TABLE vehicle_table (
+  vehicleId INT AUTO_INCREMENT PRIMARY KEY,
+  riderId INT NOT NULL,
+  category VARCHAR(50) NOT NULL,         -- e.g. bike, auto, mini, prime, suv
+  vehicle_type VARCHAR(50),
+  vehicle_number VARCHAR(20) UNIQUE,
+  vehicle_name VARCHAR(25),
+  rc_number VARCHAR(40) UNIQUE,
+  owner_name VARCHAR(150),
+  owner_contact VARCHAR(20),
+  driving_license VARCHAR(50),
+  vehicle_image VARCHAR(255),
+  rc_image VARCHAR(255),
+  is_active TINYINT(1) DEFAULT 1,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_vehicle_rider FOREIGN KEY (riderId) REFERENCES rider_table(riderId) ON DELETE CASCADE ON UPDATE CASCADE,
+  INDEX idx_vehicle_category (category),
+  INDEX idx_vehicle_rider (riderId)
+) ENGINE=InnoDB;
+
+-- ======================================================================
+-- 2) AUDIT LOG TABLES for user/rider/vehicle (JSON snapshots)
+-- ======================================================================
+CREATE TABLE user_audit_log (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  userId INT,
+  action ENUM('INSERT','UPDATE','DELETE'),
+  old_data JSON NULL,
+  new_data JSON NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX (userId)
+) ENGINE=InnoDB;
+
+CREATE TABLE rider_audit_log (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  riderId INT,
+  action ENUM('INSERT','UPDATE','DELETE'),
+  old_data JSON NULL,
+  new_data JSON NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX (riderId)
+) ENGINE=InnoDB;
+
+CREATE TABLE vehicle_audit_log (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  vehicleId INT,
+  action ENUM('INSERT','UPDATE','DELETE'),
+  old_data JSON NULL,
+  new_data JSON NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX (vehicleId)
+) ENGINE=InnoDB;
+
+-- ======================================================================
+-- 3) LOCATION TABLES - live locations + history + logs
+-- Use DECIMAL for compatibility + POINT for spatial indexing
+-- ======================================================================
+CREATE TABLE live_locations (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  entity_id BIGINT NOT NULL,
+  entity_type ENUM('user','rider') NOT NULL,
+  latitude DECIMAL(10,7) NOT NULL,
+  longitude DECIMAL(10,7) NOT NULL,
+  location POINT GENERATED ALWAYS AS (ST_PointFromText(CONCAT('POINT(', longitude, ' ', latitude, ')'))) VIRTUAL,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  UNIQUE KEY unique_entity (entity_id, entity_type),
+  INDEX idx_entity (entity_id, entity_type)
+) ENGINE=InnoDB;
+
+CREATE TABLE location_history (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  trip_id INT NOT NULL,
+  rider_id INT NOT NULL,
+  latitude DECIMAL(10,7) NOT NULL,
+  longitude DECIMAL(10,7) NOT NULL,
+  location POINT GENERATED ALWAYS AS (ST_PointFromText(CONCAT('POINT(', longitude, ' ', latitude, ')'))) VIRTUAL,
+  distance_meters DOUBLE DEFAULT 0,
+  recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_trip_id (trip_id),
+  INDEX idx_rider_id (rider_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE live_locations_log (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  entity_id BIGINT NOT NULL,
+  entity_type ENUM('user','rider') NOT NULL,
+  old_latitude DECIMAL(10,7),
+  old_longitude DECIMAL(10,7),
+  new_latitude DECIMAL(10,7),
+  new_longitude DECIMAL(10,7),
+  changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX (entity_id)
+) ENGINE=InnoDB;
+
+-- ======================================================================
+-- 4) VEHICLE PRICING table (centralized pricing config)
+-- ======================================================================
+CREATE TABLE vehicle_pricing (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  category VARCHAR(50) UNIQUE NOT NULL,
+  base_fare DECIMAL(10,2) DEFAULT 0,
+  per_km DECIMAL(10,2) DEFAULT 0,
+  per_minute DECIMAL(10,2) DEFAULT 0,
+  min_fare DECIMAL(10,2) DEFAULT 0,
+  cancellation_fee DECIMAL(10,2) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- ======================================================================
+-- 5) TRIPS table - extended production-grade
+-- ======================================================================
+DROP TABLE IF EXISTS trips;
+
+CREATE TABLE trips (
+    tripId INT AUTO_INCREMENT PRIMARY KEY,
+
+    userId INT NOT NULL,
+    riderId INT,
+    vehicleId INT,
+
+    vehicle_category VARCHAR(50) NOT NULL,
+
+    status ENUM(
+        'requested',
+        'accepted',
+        'ongoing',
+        'completed',
+        'cancelled'
+    ) DEFAULT 'requested',
+
+    -- Start location
+    start_lat DECIMAL(10,7),
+    start_lng DECIMAL(10,7),
+    start_point POINT NULL SRID 4326,
+
+    -- End location
+    end_lat DECIMAL(10,7),
+    end_lng DECIMAL(10,7),
+    end_point POINT NULL SRID 4326,
+
+    distance_km DECIMAL(10,2) DEFAULT 0,
+    duration_minutes DECIMAL(10,2) DEFAULT 0,
+
+    base_fare DECIMAL(10,2) DEFAULT 0,
+    price_per_km DECIMAL(10,2) DEFAULT 0,
+    price_per_min DECIMAL(10,2) DEFAULT 0,
+    total_fare DECIMAL(10,2) DEFAULT 0,
+
+    payment_method ENUM('cash', 'online') DEFAULT 'cash',
+    payment_status ENUM('pending', 'paid', 'failed') DEFAULT 'pending',
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+    INDEX idx_userId (userId),
+    INDEX idx_riderId (riderId),
+    INDEX idx_vehicleId (vehicleId),
+    INDEX idx_status (status)
+) ENGINE=InnoDB;
+
+
+-- Add foreign keys (do as ALTER to keep readability)
+ALTER TABLE trips
+  ADD CONSTRAINT fk_trips_user FOREIGN KEY (userId) REFERENCES user_table(userId) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT fk_trips_rider FOREIGN KEY (riderId) REFERENCES rider_table(riderId) ON DELETE SET NULL ON UPDATE CASCADE,
+  ADD CONSTRAINT fk_trips_vehicle FOREIGN KEY (vehicleId) REFERENCES vehicle_table(vehicleId) ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- ======================================================================
+-- 6) TRIP AUDIT LOG
+-- ======================================================================
+CREATE TABLE trip_audit_log (
+  id BIGINT AUTO_INCREMENT PRIMARY KEY,
+  tripId INT,
+  action ENUM('INSERT','UPDATE','DELETE'),
+  old_data JSON NULL,
+  new_data JSON NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX (tripId)
+) ENGINE=InnoDB;
+
+-- ======================================================================
+-- 7) Haversine SQL FUNCTION (distance in KM)
+--    Returns DECIMAL(10,4)
+-- ======================================================================
+DROP FUNCTION IF EXISTS haversine_km;
+DELIMITER $$
+CREATE FUNCTION haversine_km (
+  lat1 DOUBLE, lon1 DOUBLE, lat2 DOUBLE, lon2 DOUBLE
+) RETURNS DECIMAL(10,4) DETERMINISTIC
+BEGIN
+  DECLARE R DOUBLE DEFAULT 6371.0; -- Earth radius in KM
+  DECLARE dLat DOUBLE;
+  DECLARE dLon DOUBLE;
+  DECLARE a DOUBLE;
+  DECLARE c DOUBLE;
+  SET dLat = RADIANS(lat2 - lat1);
+  SET dLon = RADIANS(lon2 - lon1);
+  SET a = SIN(dLat/2) * SIN(dLat/2) + COS(RADIANS(lat1)) * COS(RADIANS(lat2)) * SIN(dLon/2) * SIN(dLon/2);
+  SET c = 2 * ATAN2(SQRT(a), SQRT(1 - a));
+  RETURN ROUND(R * c, 4);
+END$$
+DELIMITER ;
+
+-- ======================================================================
+-- 8) TRIGGERS
+--  - auto-fill trips.vehicle_category and price fields on INSERT (from vehicle_table & vehicle_pricing)
+--  - log trip inserts/updates
+--  - log live_locations updates (already have table; add trigger)
+--  - prevent duplicate location_history consecutive entries
+-- ======================================================================
+
+-- 8.1 Auto-populate vehicle_category and pricing on trips BEFORE INSERT
+DROP TRIGGER IF EXISTS trg_trips_before_insert;
+DELIMITER $$
+CREATE TRIGGER trg_trips_before_insert
+BEFORE INSERT ON trips
+FOR EACH ROW
+BEGIN
+  DECLARE v_category VARCHAR(50);
+  DECLARE v_per_km DECIMAL(10,2);
+  DECLARE v_base DECIMAL(10,2);
+  DECLARE v_per_min DECIMAL(10,2);
+
+  -- get vehicle category from vehicle_table
+  SELECT category INTO v_category FROM vehicle_table WHERE vehicleId = NEW.vehicleId LIMIT 1;
+  IF v_category IS NULL THEN
+    SET v_category = 'unknown';
+  END IF;
+
+  SET NEW.vehicle_category = v_category;
+
+  -- get pricing for category
+  SELECT per_km, base_fare, per_minute INTO v_per_km, v_base, v_per_min
+  FROM vehicle_pricing
+  WHERE category = v_category
+  LIMIT 1;
+
+  IF v_per_km IS NULL THEN
+    SET v_per_km = 0;
+  END IF;
+  IF v_base IS NULL THEN
+    SET v_base = 0;
+  END IF;
+  IF v_per_min IS NULL THEN
+    SET v_per_min = 0;
+  END IF;
+
+  SET NEW.price_per_km = v_per_km;
+  SET NEW.base_fare = v_base;
+  SET NEW.price_per_min = v_per_min;
+
+  -- If both start and end are provided on insert, compute distance & fare
+  IF NEW.start_lat IS NOT NULL AND NEW.start_lng IS NOT NULL AND NEW.end_lat IS NOT NULL AND NEW.end_lng IS NOT NULL THEN
+    SET NEW.distance_km = haversine_km(NEW.start_lat, NEW.start_lng, NEW.end_lat, NEW.end_lng);
+    -- basic fare formula: base + per_km * distance
+    SET NEW.total_fare = ROUND(NEW.base_fare + (NEW.price_per_km * NEW.distance_km) + (NEW.price_per_min * NEW.duration_minutes), 2);
+    -- enforce min fare
+    IF (SELECT min_fare FROM vehicle_pricing WHERE category = v_category LIMIT 1) IS NOT NULL THEN
+      IF NEW.total_fare < (SELECT min_fare FROM vehicle_pricing WHERE category = v_category LIMIT 1) THEN
+        SET NEW.total_fare = (SELECT min_fare FROM vehicle_pricing WHERE category = v_category LIMIT 1);
+      END IF;
+    END IF;
+  END IF;
+END$$
+DELIMITER ;
+
+-- 8.2 Trip audit log triggers
+DROP TRIGGER IF EXISTS trg_trip_after_insert;
+DELIMITER $$
+CREATE TRIGGER trg_trip_after_insert
+AFTER INSERT ON trips
+FOR EACH ROW
+BEGIN
+  INSERT INTO trip_audit_log (tripId, action, new_data)
+  VALUES (NEW.tripId, 'INSERT', JSON_OBJECT(
+    'userId', NEW.userId,
+    'riderId', NEW.riderId,
+    'vehicleId', NEW.vehicleId,
+    'vehicle_category', NEW.vehicle_category,
+    'status', NEW.status,
+    'start_lat', NEW.start_lat,
+    'start_lng', NEW.start_lng,
+    'end_lat', NEW.end_lat,
+    'end_lng', NEW.end_lng,
+    'distance_km', NEW.distance_km,
+    'total_fare', NEW.total_fare
+  ));
+END$$
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS trg_trip_after_update;
+DELIMITER $$
+CREATE TRIGGER trg_trip_after_update
+AFTER UPDATE ON trips
+FOR EACH ROW
+BEGIN
+  INSERT INTO trip_audit_log (tripId, action, old_data, new_data)
+  VALUES (OLD.tripId, 'UPDATE',
+    JSON_OBJECT(
+      'status', OLD.status,
+      'start_lat', OLD.start_lat,
+      'start_lng', OLD.start_lng,
+      'end_lat', OLD.end_lat,
+      'end_lng', OLD.end_lng,
+      'distance_km', OLD.distance_km,
+      'total_fare', OLD.total_fare
+    ),
+    JSON_OBJECT(
+      'status', NEW.status,
+      'start_lat', NEW.start_lat,
+      'start_lng', NEW.start_lng,
+      'end_lat', NEW.end_lat,
+      'end_lng', NEW.end_lng,
+      'distance_km', NEW.distance_km,
+      'total_fare', NEW.total_fare
+    )
+  );
+END$$
+DELIMITER ;
+
+DROP TRIGGER IF EXISTS trg_trip_after_delete;
+DELIMITER $$
+CREATE TRIGGER trg_trip_after_delete
+AFTER DELETE ON trips
+FOR EACH ROW
+BEGIN
+  INSERT INTO trip_audit_log (tripId, action, old_data)
+  VALUES (OLD.tripId, 'DELETE', JSON_OBJECT(
+    'userId', OLD.userId,
+    'riderId', OLD.riderId,
+    'vehicleId', OLD.vehicleId,
+    'vehicle_category', OLD.vehicle_category,
+    'status', OLD.status,
+    'distance_km', OLD.distance_km,
+    'total_fare', OLD.total_fare
+  ));
+END$$
+DELIMITER ;
+
+-- 8.3 Live locations update log trigger (already had logic; ensure exists)
+DROP TRIGGER IF EXISTS trg_live_locations_update;
+DELIMITER $$
+CREATE TRIGGER trg_live_locations_update
+BEFORE UPDATE ON live_locations
+FOR EACH ROW
+BEGIN
+  INSERT INTO live_locations_log (
+    entity_id, entity_type,
+    old_latitude, old_longitude,
+    new_latitude, new_longitude
+  ) VALUES (
+    OLD.entity_id, OLD.entity_type,
+    OLD.latitude, OLD.longitude,
+    NEW.latitude, NEW.longitude
+  );
+END$$
+DELIMITER ;
+
+-- 8.4 Prevent duplicate consecutive location_history rows
+DROP TRIGGER IF EXISTS trg_location_history_no_duplicates;
+DELIMITER $$
+CREATE TRIGGER trg_location_history_no_duplicates
+BEFORE INSERT ON location_history
+FOR EACH ROW
+BEGIN
+  DECLARE last_lat DECIMAL(10,7);
+  DECLARE last_lng DECIMAL(10,7);
+
+  SELECT latitude, longitude
+  INTO last_lat, last_lng
+  FROM location_history
+  WHERE rider_id = NEW.rider_id
+    AND trip_id = NEW.trip_id
+  ORDER BY id DESC
+  LIMIT 1;
+
+  IF last_lat = NEW.latitude AND last_lng = NEW.longitude THEN
+      SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Duplicate location ignored';
+  END IF;
+END$$
+DELIMITER ;
+
+-- ======================================================================
+-- 9) STORED PROCEDURES: create_trip & finalize_trip
+--    - create_trip: inserts into trips table, auto-fills pricing and optionally calculates estimated fare if end coords provided.
+--    - finalize_trip: sets status completed, computes final distance/time/fare using history or haversine between start & end.
+-- ======================================================================
+
+-- 9.1 create_trip
+DROP PROCEDURE IF EXISTS sp_create_trip;
+DELIMITER $$
+CREATE PROCEDURE sp_create_trip (
+  IN in_userId INT,
+  IN in_riderId INT,
+  IN in_vehicleId INT,
+  IN in_start_lat DECIMAL(10,7),
+  IN in_start_lng DECIMAL(10,7),
+  IN in_end_lat DECIMAL(10,7),
+  IN in_end_lng DECIMAL(10,7),
+  OUT out_tripId INT
+)
+BEGIN
+  DECLARE v_category VARCHAR(50);
+  DECLARE v_base DECIMAL(10,2);
+  DECLARE v_per_km DECIMAL(10,2);
+  DECLARE v_per_min DECIMAL(10,2);
+  DECLARE est_distance DECIMAL(10,4);
+
+  SELECT category INTO v_category FROM vehicle_table WHERE vehicleId = in_vehicleId LIMIT 1;
+  IF v_category IS NULL THEN SET v_category = 'unknown'; END IF;
+
+  SELECT base_fare, per_km, per_minute INTO v_base, v_per_km, v_per_min
+  FROM vehicle_pricing WHERE category = v_category LIMIT 1;
+
+  IF in_end_lat IS NOT NULL AND in_end_lng IS NOT NULL THEN
+    SET est_distance = haversine_km(in_start_lat, in_start_lng, in_end_lat, in_end_lng);
+  ELSE
+    SET est_distance = 0;
+  END IF;
+
+  INSERT INTO trips (userId, riderId, vehicleId, vehicle_category, status, start_lat, start_lng, end_lat, end_lng, distance_km, duration_minutes, base_fare, price_per_km, price_per_min, total_fare)
+  VALUES (in_userId, in_riderId, in_vehicleId, v_category, 'requested', in_start_lat, in_start_lng, in_end_lat, in_end_lng, est_distance, 0, COALESCE(v_base,0), COALESCE(v_per_km,0), COALESCE(v_per_min,0), ROUND(COALESCE(v_base,0) + COALESCE(v_per_km,0)*est_distance,2));
+
+  SET out_tripId = LAST_INSERT_ID();
+END$$
+DELIMITER ;
+
+-- 9.2 finalize_trip: calculate final distance from history if present or haversine; update totals
+DROP PROCEDURE IF EXISTS sp_finalize_trip;
+DELIMITER $$
+CREATE PROCEDURE sp_finalize_trip (
+  IN in_tripId INT,
+  IN in_end_lat DECIMAL(10,7),
+  IN in_end_lng DECIMAL(10,7),
+  IN in_end_time TIMESTAMP
+)
+BEGIN
+  DECLARE start_lat DECIMAL(10,7);
+  DECLARE start_lng DECIMAL(10,7);
+  DECLARE total_distance DECIMAL(10,4);
+  DECLARE total_minutes DECIMAL(10,2);
+  DECLARE ppk DECIMAL(10,2);
+  DECLARE pb DECIMAL(10,2);
+  DECLARE ppm DECIMAL(10,2);
+  DECLARE calc_fare DECIMAL(10,2);
+
+  SELECT start_lat, start_lng, price_per_km, base_fare, price_per_min INTO start_lat, start_lng, ppk, pb, ppm FROM trips WHERE tripId = in_tripId LIMIT 1;
+
+  -- try to compute distance from location_history if available
+  SELECT SUM(distance_meters) INTO total_distance FROM location_history WHERE trip_id = in_tripId;
+  IF total_distance IS NULL OR total_distance = 0 THEN
+    -- fallback to haversine between start & given end
+    SET total_distance = haversine_km(start_lat, start_lng, in_end_lat, in_end_lng) * 1000; -- meters
+  END IF;
+
+  -- compute duration in minutes (if created_at used as start)
+  SELECT TIMESTAMPDIFF(SECOND, created_at, in_end_time)/60 INTO total_minutes FROM trips WHERE tripId = in_tripId LIMIT 1;
+
+  IF total_minutes IS NULL THEN SET total_minutes = 0; END IF;
+
+  -- convert meters to km
+  SET total_distance = total_distance / 1000.0;
+
+  SET calc_fare = ROUND(pb + (ppk * total_distance) + (ppm * total_minutes), 2);
+
+  -- enforce min_fare from pricing table
+  IF (SELECT min_fare FROM vehicle_pricing WHERE category = (SELECT vehicle_category FROM trips WHERE tripId = in_tripId) LIMIT 1) IS NOT NULL THEN
+    IF calc_fare < (SELECT min_fare FROM vehicle_pricing WHERE category = (SELECT vehicle_category FROM trips WHERE tripId = in_tripId) LIMIT 1) THEN
+      SET calc_fare = (SELECT min_fare FROM vehicle_pricing WHERE category = (SELECT vehicle_category FROM trips WHERE tripId = in_tripId) LIMIT 1);
+    END IF;
+  END IF;
+
+  UPDATE trips
+  SET end_lat = in_end_lat,
+      end_lng = in_end_lng,
+      distance_km = ROUND(total_distance,2),
+      duration_minutes = ROUND(total_minutes,2),
+      total_fare = calc_fare,
+      status = 'completed',
+      updated_at = COALESCE(in_end_time, NOW())
+  WHERE tripId = in_tripId;
+END$$
+DELIMITER ;
+
+-- ======================================================================
+-- 10) SAMPLE SEED DATA -- minimal to test quickly
+-- ======================================================================
+INSERT INTO user_table (firstname, lastname, gender, mobile_number, email) VALUES
+('Alice','Smith','Female','9000000001','alice@example.com'),
+('Bob','Johnson','Male','9000000002','bob@example.com');
+
+INSERT INTO rider_table (userId, driving_license) VALUES
+(1, 'DL-RIDER-001');
+
+INSERT INTO vehicle_table (riderId, category, vehicle_type, vehicle_number, rc_number, owner_name, owner_contact)
+VALUES (1, 'bike', 'two-wheeler', 'KA01AA0001', 'RC0001', 'Bob Owner', '9000000002');
+
+INSERT INTO vehicle_pricing (category, base_fare, per_km, per_minute, min_fare, cancellation_fee)
+VALUES
+('bike', 20.00, 10.00, 0.5, 30.00, 20.00),
+('auto', 30.00, 12.00, 1.0, 40.00, 30.00),
+('mini', 50.00, 15.00, 2.0, 60.00, 50.00);
+
+-- Create a test trip using stored procedure
+SET @out_tid = 0;
+CALL sp_create_trip(1, 1, 1, 12.9715987, 77.5945627, 12.9758302, 77.6015546, @out_tid);
+SELECT @out_tid AS created_trip_id;
+
+-- ======================================================================
+-- 11) PERFORMANCE / MAINTENANCE NOTES (not executed)
+-- ======================================================================
+/*
+ - Consider partitioning location_history by trip_id or by date for very large scale.
+ - Add retention policies: move old location_history to a cold storage (S3) periodically.
+ - Build materialized views / OLAP tables for reporting.
+ - Use Redis for storing ephemeral live_locations too (fast reads) and sync to DB periodically.
+ - Add monitoring tables for socket connections, job queues.
+*/
+
+-- ======================================================================
+-- 12) Helpful Views (optional)
+-- Example: current_rider_positions
+-- ======================================================================
+DROP VIEW IF EXISTS vw_current_rider_positions;
+CREATE VIEW vw_current_rider_positions AS
+SELECT entity_id AS riderId, latitude, longitude, updated_at
+FROM live_locations
+WHERE entity_type = 'rider';
+
+-- ======================================================================
+-- End of script
+-- ======================================================================
+
+

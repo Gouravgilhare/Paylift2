@@ -16,7 +16,9 @@ class LocationController {
       res.json({ success: true, message: "Live location updated" });
     } catch (err) {
       console.error("Update live location error:", err);
-      res.status(500).json({ success: false, message: "Server error" });
+      res
+        .status(500)
+        .json({ success: false, message: "Server error", error: err.message });
     }
   }
 
