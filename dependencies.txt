@@ -1,34 +1,30 @@
 # Production dependencies
-express
+bcryptjs
+compression
+cookie-parser
 cors
 dotenv
-morgan
-mysql2
-jsonwebtoken
-bcrypt
-cookie-parser
-ioredis
-multer
-helmet
-xss-clean
+express
 express-rate-limit
+express-validator
+helmet
 hpp
-path
-fs
+ioredis
+joi
+jsonwebtoken
+morgan
+multer
+mysql2
+nodemailer
+pdfjs-dist
+tesseract.js
+twilio
 uuid
-compression
+xss-clean
 
 # Development dependencies
-nodemon
 cross-env
+nodemon
 
-# Optional / extra dependencies
-joi
-express-validator
-twilio
-nodemailer
-
-
-
-
-npm install express cors dotenv morgan mysql2 jsonwebtoken bcrypt cookie-parser ioredis multer helmet xss-clean express-rate-limit hpp path fs uuid joi express-validator twilio nodemailer && npm install --save-dev nodemon cross-env
+# Installation command
+npm install bcryptjs compression cookie-parser cors dotenv express express-rate-limit express-validator helmet hpp ioredis joi jsonwebtoken morgan multer mysql2 nodemailer pdfjs-dist tesseract.js twilio uuid xss-clean && npm install --save-dev cross-env nodemon

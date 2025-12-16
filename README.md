@@ -29,6 +29,14 @@ paylift-backend/
 │   │   └─ middleware/
 │   │       └─ auth.middleware.js
 │   │
+│   ├─ admin/
+│   │   ├─ controllers/
+│   │   │   └─ admin.controller.js
+│   │   ├─ routes/
+│   │   │   └─ admin.routes.js
+│   │   └─ middleware/
+│   │       └─ admin.middleware.js
+│   │
 │   ├─ user/
 │   │   ├─ controllers/
 │   │   │   └─ user.controller.js
@@ -78,6 +86,14 @@ paylift-backend/
 │   │   │   └─ location.model.js
 │   │   └─ routes/
 │   │       └─ location.routes.js
+│   │
+│   ├─ extract/
+│   │   ├─ controllers/
+│   │   │   └─ extract.controller.js
+│   │   ├─ services/
+│   │   │   └─ extract.service.js
+│   │   └─ routes/
+│   │       └─ extract.routes.js
 │
 ├─ middleware/                 # Shared middlewares
 │   ├─ error.middleware.js
@@ -136,12 +152,33 @@ MAPPLS_CLIENT_SECRET=
 
 ```
 ┌───────────────────────┐
-│       Auth Module      │
+│     User Auth Module   │
 └───────────────────────┘
-POST /api/auth/send-otp          → Send OTP
-POST /api/auth/verify-otp        → Verify OTP & issue JWT
-POST /api/auth/refresh-token     → Refresh access token
-POST /api/auth/logout            → Logout (requires token)
+POST /api/auth/send-otp          → Send OTP to user mobile
+POST /api/auth/verify-otp        → Verify OTP & issue JWT access token
+POST /api/auth/refresh-token     → Refresh expired access token
+POST /api/auth/logout            → Logout user (requires JWT token)
+
+┌───────────────────────┐
+│    Admin Auth Module   │
+└───────────────────────┘
+POST /api/auth/admin/send-otp       → Send OTP to admin mobile
+POST /api/auth/admin/verify-otp     → Verify OTP & issue JWT access token
+POST /api/auth/admin/refresh-token  → Refresh expired access token
+POST /api/auth/admin/logout         → Logout admin (requires JWT token)
+
+┌───────────────────────┐
+│       Admin Module     │
+└───────────────────────┘
+POST   /api/admin/send-otp       → Send admin OTP
+POST   /api/admin/verify-otp     → Verify OTP & issue JWT
+POST   /api/admin/refresh-token  → Refresh access token
+POST   /api/admin/logout         → Logout (requires token)
+GET    /api/admin/users          → Get all users (admin only)
+GET    /api/admin/riders         → Get all riders (admin only)
+GET    /api/admin/vehicles       → Get all vehicles (admin only)
+GET    /api/admin/trips          → Get all trips (admin only)
+GET    /api/admin/dashboard      → Get dashboard stats (admin only)
 
 ┌───────────────────────┐
 │       User Module      │
@@ -191,10 +228,10 @@ GET  /api/location/history/:trip_id       → Get trip history
 ┌───────────────────────┐
 │     Extract Module     │
 └───────────────────────┘
-POST /api/extract/insurance               → Extract insurance data from PDF
-POST /api/extract/rc-card                 → Extract RC card from image
-POST /api/extract/number-plate            → Extract vehicle number plate from image
-POST /api/extract/driving-license         → Extract DL number from image
+POST /api/extract/insurance               → Extract insurance data from PDF (requires JWT, file upload)
+POST /api/extract/rc-card                 → Extract RC card data from image (requires JWT, file upload)
+POST /api/extract/number-plate            → Extract vehicle number plate from image (requires JWT, file upload)
+POST /api/extract/driving-license         → Extract DL number from image (requires JWT, file upload)
 ```
 
 ---
