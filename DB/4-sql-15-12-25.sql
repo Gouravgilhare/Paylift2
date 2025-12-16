@@ -63,18 +63,48 @@ CREATE TABLE vehicle_table (
 
 CREATE TABLE admin_table (
     admin_id INT AUTO_INCREMENT PRIMARY KEY,
+
     firstname VARCHAR(100) NOT NULL,
     lastname VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
-    password VARCHAR(255) NOT NULL,
+
+    password VARCHAR(255) DEFAULT NULL, -- NULL for OTP-based auth
+
     role ENUM('admin', 'superadmin') DEFAULT 'admin',
     is_active TINYINT(1) DEFAULT 1,
+
     last_login DATETIME DEFAULT NULL,
+
     created_by INT DEFAULT NULL,
     updated_by INT DEFAULT NULL,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
+        ON UPDATE CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_admin_created_by 
+        FOREIGN KEY (created_by) REFERENCES admin_table(admin_id),
+
+    CONSTRAINT fk_admin_updated_by 
+        FOREIGN KEY (updated_by) REFERENCES admin_table(admin_id)
 );
+INSERT INTO admin_table (
+    firstname,
+    lastname,
+    email,
+    password,
+    role,
+    is_active
+)
+VALUES (
+    'Super',
+    'Admin',
+    'superadmin@paylift.com',
+    NULL,
+    'superadmin',
+    1
+);
+
 
 
 
@@ -111,15 +141,21 @@ CREATE TABLE vehicle_audit_log (
   INDEX (vehicleId)
 ) ENGINE=InnoDB;
 
-CREATE TABLE admin_log (
+CREATE TABLE admin_activity_log (
     log_id INT AUTO_INCREMENT PRIMARY KEY,
+
     admin_id INT NOT NULL,
-    action_type ENUM('INSERT','UPDATE','DELETE') NOT NULL,
-    old_data JSON DEFAULT NULL,
-    new_data JSON DEFAULT NULL,
-    action_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    action_by INT DEFAULT NULL,
-    FOREIGN KEY (admin_id) REFERENCES admin_table(admin_id) ON DELETE CASCADE
+    action VARCHAR(100) NOT NULL,       -- LOGIN, LOGOUT, CREATE_ADMIN, DELETE_USER
+    entity_type VARCHAR(50) DEFAULT NULL,
+    entity_id INT DEFAULT NULL,
+
+    ip_address VARCHAR(45) DEFAULT NULL,
+    user_agent TEXT DEFAULT NULL,
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_activity_admin 
+        FOREIGN KEY (admin_id) REFERENCES admin_table(admin_id)
 );
 
 
@@ -452,6 +488,114 @@ BEGIN
   END IF;
 END$$
 DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER admin_after_insert
+AFTER INSERT ON admin_table
+FOR EACH ROW
+BEGIN
+    INSERT INTO admin_log (admin_id, action_type, new_data, action_by)
+    VALUES (NEW.admin_id, 'INSERT', JSON_OBJECT(
+        'firstname', NEW.firstname,
+        'lastname', NEW.lastname,
+        'email', NEW.email,
+        'role', NEW.role,
+        'is_active', NEW.is_active
+    ), NEW.created_by);
+END;
+//
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE TRIGGER trg_admin_created
+AFTER INSERT ON admin_table
+FOR EACH ROW
+BEGIN
+    INSERT INTO admin_activity_log (
+        admin_id,
+        action
+    )
+    VALUES (
+        NEW.admin_id,
+        'ADMIN_CREATED'
+    );
+END$$
+
+DELIMITER ;
+
+
+DELIMITER $$
+
+CREATE TRIGGER trg_admin_last_login
+AFTER UPDATE ON admin_table
+FOR EACH ROW
+BEGIN
+    IF NEW.last_login <> OLD.last_login THEN
+        INSERT INTO admin_activity_log (
+            admin_id,
+            action
+        )
+        VALUES (
+            NEW.admin_id,
+            'LOGIN'
+        );
+    END IF;
+END$$
+
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER admin_after_update
+AFTER UPDATE ON admin_table
+FOR EACH ROW
+BEGIN
+    INSERT INTO admin_log (admin_id, action_type, old_data, new_data, action_by)
+    VALUES (
+        NEW.admin_id,
+        'UPDATE',
+        JSON_OBJECT(
+            'firstname', OLD.firstname,
+            'lastname', OLD.lastname,
+            'email', OLD.email,
+            'role', OLD.role,
+            'is_active', OLD.is_active
+        ),
+        JSON_OBJECT(
+            'firstname', NEW.firstname,
+            'lastname', NEW.lastname,
+            'email', NEW.email,
+            'role', NEW.role,
+            'is_active', NEW.is_active
+        ),
+        NEW.updated_by
+    );
+END;
+//
+DELIMITER ;
+
+DELIMITER //
+CREATE TRIGGER admin_after_delete
+AFTER DELETE ON admin_table
+FOR EACH ROW
+BEGIN
+    INSERT INTO admin_log (admin_id, action_type, old_data, action_by)
+    VALUES (
+        OLD.admin_id,
+        'DELETE',
+        JSON_OBJECT(
+            'firstname', OLD.firstname,
+            'lastname', OLD.lastname,
+            'email', OLD.email,
+            'role', OLD.role,
+            'is_active', OLD.is_active
+        ),
+        OLD.updated_by
+    );
+END;
+//
+DELIMITER ;
+
 
 -- ======================================================================
 -- 9) STORED PROCEDURES: create_trip & finalize_trip
