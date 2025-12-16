@@ -2,7 +2,8 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import compression from "compression";
-import morgan from "morgan";
+import morganMiddleware from "./middleware/morgan.logger.js";
+import { requestLogger } from "./middleware/logging.middleware.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
@@ -19,9 +20,9 @@ import authRoutes from "./modules/auth/routes/auth.routes.js";
 import userRoutes from "./modules/user/routes/user.routes.js";
 import riderRoutes from "./modules/rider/routes/rider.routes.js";
 import vehicleRoutes from "./modules/vehicle/routes/vehicle.routes.js";
-import locationRoutes from "./modules/location/routes/location.routes.js";
 import tripRoutes from "./modules/trips/routes/trip.routes.js";
-import extracRoutes from "./modules/document-extract/routes/extract.routes.js";
+import locationRoutes from "./modules/location/routes/location.routes.js";
+import extractRoutes from "./modules/extract/routes/extract.routes.js";
 import adminRoutes from "./modules/admin/routes/admin.routes.js";
 
 const app = express();
@@ -38,10 +39,13 @@ app.use(helmet());
 app.use(compression());
 app.use(express.json({ limit: "20mb" }));
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan("dev"));
 
 // Serve uploaded files
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// Logging middlewares
+app.use(morganMiddleware);
+app.use(requestLogger);
 
 // ================= ROUTES =================
 app.use("/api/auth", authRoutes);
@@ -50,7 +54,7 @@ app.use("/api/riders", riderRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/location", locationRoutes);
 app.use("/api/trips", tripRoutes);
-app.use("/api/extract/", extracRoutes);
+app.use("/api/extract/", extractRoutes);
 app.use("/api/admin", adminRoutes);
 
 // ================= BASIC HEALTH CHECK =================
