@@ -13,11 +13,11 @@ import {
 } from "../../../middleware/error.handler.js";
 import { verifyToken as authMiddleware } from "../middleware/auth.middleware.js";
 
-const router = express.Router();
+module.exports = router;
+const authController = require("../controllers/auth.controller");
 
-// Authentication routes
-router.post("/send-otp", asyncHandler(sendOtp));
-router.post("/verify-otp", asyncHandler(verifyOtp));
+router.post("/send-otp", authController.sendOtp);
+router.post("/verify-otp", authController.verifyOtp);
 
 // Token routes
 router.post("/refresh-token", asyncHandler(refreshAccessToken));
