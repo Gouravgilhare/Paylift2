@@ -1,4 +1,4 @@
-import db from "../../config/db.config.js";
+import pool from "../../config/db.config.js";
 import { v4 as uuidv4 } from "uuid";
 
 const seedUsers = async () => {
@@ -64,7 +64,7 @@ const seedUsers = async () => {
         user.email,
         "1234", // sample security pin
       ];
-      await db.promise().query(query, values);
+      await pool.promise().query(query, values);
     }
     console.log("   ✓ Users seeded");
   } catch (error) {

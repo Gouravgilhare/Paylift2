@@ -10,29 +10,37 @@ const runSeeds = async () => {
   try {
     console.log("🌱 Starting database seeding...\n");
 
-    // 1. Seed vehicle pricing first (no dependencies)
+    // EXECUTION ORDER (dependencies matter):
+
+    // 1️⃣ Vehicle Pricing (no dependencies)
     console.log("📍 Seeding vehicle pricing...");
     await seedVehiclePricing();
+    // Inserts: bike, auto, mini, prime, suv pricing into vehicle_pricing table
 
-    // 2. Seed users
+    // 2️⃣ Users (no dependencies)
     console.log("👤 Seeding users...");
     await seedUsers();
+    // Inserts: 5 sample users into user_table (userId 1-5)
 
-    // 3. Seed admins
+    // 3️⃣ Admins (no dependencies)
     console.log("🔐 Seeding admins...");
     await seedAdmins();
+    // Inserts: superadmin, admin1, admin2 into admin_table
 
-    // 4. Seed riders (depends on users)
+    // 4️⃣ Riders (depends on users)
     console.log("🏍️ Seeding riders...");
     await seedRiders();
+    // Links users 1, 3, 5 as riders (riderId 1-3)
 
-    // 5. Seed vehicles (depends on riders)
+    // 5️⃣ Vehicles (depends on riders)
     console.log("🚗 Seeding vehicles...");
     await seedVehicles();
+    // Creates 4 vehicles for riders (bike, auto, mini, prime)
 
-    // 6. Seed trips (depends on users, riders, vehicles)
+    // 6️⃣ Trips (depends on users, riders, vehicles)
     console.log("🛣️ Seeding trips...");
     await seedTrips();
+    // Creates 5 sample trips (4 completed, 1 requested)
 
     console.log("\n✅ Database seeding completed successfully!");
     process.exit(0);

@@ -1,4 +1,4 @@
-import db from "../../config/db.config.js";
+import pool from "../../config/db.config.js";
 
 const seedAdmins = async () => {
   const adminsData = [
@@ -36,7 +36,7 @@ const seedAdmins = async () => {
         admin.role,
         admin.is_active,
       ];
-      await db.promise().query(query, values);
+      await pool.promise().query(query, values);
     }
     console.log("   ✓ Admins seeded");
   } catch (error) {

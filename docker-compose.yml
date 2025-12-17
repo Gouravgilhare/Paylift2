@@ -1,66 +1,66 @@
-version: "3.8"
+  version: "3.8"
 
-services:
-  app:
-    build: .
-    container_name: paylift2-backend
-    ports:
-      - "6000:5000"
-    volumes:
-      - .:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-    env_file:
-      - .env
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - paylift-network
-    restart: on-failure
+  services:
+    app:
+      build: .
+      container_name: paylift2-backend
+      ports:
+        - "6000:5000"
+      volumes:
+        - .:/app
+        - /app/node_modules
+      environment:
+        - NODE_ENV=development
+      env_file:
+        - .env
+      depends_on:
+        mysql:
+          condition: service_healthy
+        redis:
+          condition: service_healthy
+      networks:
+        - paylift-network
+      restart: on-failure
 
-  mysql:
-    image: mysql:8.0
-    container_name: paylift2-mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "3311:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./init-db:/docker-entrypoint-initdb.d
-    networks:
-      - paylift-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: on-failure
+    mysql:
+      image: mysql:8.0
+      container_name: paylift2-mysql
+      environment:
+        MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+        MYSQL_DATABASE: ${DB_NAME}
+        MYSQL_USER: ${DB_USER}
+        MYSQL_PASSWORD: ${DB_PASSWORD}
+      ports:
+        - "3311:3306"
+      volumes:
+        - mysql_data:/var/lib/mysql
+        - ./init-db:/docker-entrypoint-initdb.d
+      networks:
+        - paylift-network
+      healthcheck:
+        test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+        interval: 5s
+        timeout: 5s
+        retries: 10
+      restart: on-failure
 
-  redis:
-    image: redis:7-alpine
-    container_name: paylift2-redis
-    ports:
-      - "6379:6379"
-    networks:
-      - paylift-network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-    restart: on-failure
+    redis:
+      image: redis:7-alpine
+      container_name: paylift2-redis
+      ports:
+        - "6379:6379"
+      networks:
+        - paylift-network
+      healthcheck:
+        test: ["CMD", "redis-cli", "ping"]
+        interval: 5s
+        timeout: 3s
+        retries: 5
+      restart: on-failure
 
-volumes:
-  mysql_data:
+  volumes:
+    mysql_data:
 
-networks:
-  paylift-network:
-    driver: bridge
+  networks:
+    paylift-network:
+      driver: bridge

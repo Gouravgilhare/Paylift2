@@ -1,4 +1,4 @@
-import db from "../config/db.config.js";
+import pool from "../config/db.config.js";
 
 const resetDatabase = async () => {
   try {
@@ -21,17 +21,18 @@ const resetDatabase = async () => {
       "vehicle_pricing",
     ];
 
+    // Drop tables in reverse dependency order
     for (const table of tables) {
       try {
-        await db.promise().query(`DROP TABLE IF EXISTS ${table}`);
+        await pool.promise().query(`DROP TABLE IF EXISTS ${table}`);
         console.log(`   ✓ Dropped ${table}`);
       } catch (error) {
-        console.warn(`   ⚠ Could not drop ${table}: ${error.message}`);
+        console.warn(`   ⚠ Could not drop ${table}`);
       }
     }
 
     console.log("\n✅ Database reset completed!");
-    console.log("⚠️ Please run: npm run seed (to recreate tables and seed data)\n");
+    console.log("⚠️ Run: npm run seed (to recreate tables)\n");
     process.exit(0);
   } catch (error) {
     console.error("❌ Reset failed:", error.message);

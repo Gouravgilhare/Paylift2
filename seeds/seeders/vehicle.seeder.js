@@ -1,4 +1,4 @@
-import db from "../../config/db.config.js";
+import pool from "../../config/db.config.js";
 
 const seedVehicles = async () => {
   const vehiclesData = [
@@ -59,7 +59,7 @@ const seedVehicles = async () => {
         vehicle.driving_license,
         1,
       ];
-      await db.promise().query(query, values);
+      await pool.promise().query(query, values);
     }
     console.log("   ✓ Vehicles seeded");
   } catch (error) {

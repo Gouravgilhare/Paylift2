@@ -25,7 +25,7 @@ npm run test:coverage
 ### 2. Postman (Manual)
 
 1. Import `postman-collection.json` into Postman
-2. Set environment variable: `baseUrl=http://localhost:3000`
+2. Set environment variable: `baseUrl=http://localhost:6000`
 3. Run requests sequentially (auth first, then other endpoints)
 
 ## Test Structure

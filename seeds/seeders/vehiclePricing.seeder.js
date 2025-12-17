@@ -1,4 +1,4 @@
-import db from "../../config/db.config.js";
+import pool from "../../config/db.config.js";
 
 const seedVehiclePricing = async () => {
   const pricingData = [
@@ -56,7 +56,7 @@ const seedVehiclePricing = async () => {
         pricing.min_fare,
         pricing.cancellation_fee,
       ];
-      await db.promise().query(query, values);
+      await pool.promise().query(query, values);
     }
     console.log("   ✓ Vehicle pricing seeded");
   } catch (error) {

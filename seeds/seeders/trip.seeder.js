@@ -1,4 +1,4 @@
-import db from "../../config/db.config.js";
+import pool from "../../config/db.config.js";
 
 const seedTrips = async () => {
   const tripsData = [
@@ -122,7 +122,7 @@ const seedTrips = async () => {
         trip.payment_method,
         trip.payment_status,
       ];
-      await db.promise().query(query, values);
+      await pool.promise().query(query, values);
     }
     console.log("   ✓ Trips seeded");
   } catch (error) {

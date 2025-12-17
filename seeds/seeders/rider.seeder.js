@@ -1,4 +1,4 @@
-import db from "../../config/db.config.js";
+import pool from "../../config/db.config.js";
 
 const seedRiders = async () => {
   const ridersData = [
@@ -24,7 +24,7 @@ const seedRiders = async () => {
       const query =
         "INSERT INTO rider_table (userId, driving_license, is_active) VALUES (?, ?, ?)";
       const values = [rider.userId, rider.driving_license, rider.is_active];
-      await db.promise().query(query, values);
+      await pool.promise().query(query, values);
     }
     console.log("   ✓ Riders seeded");
   } catch (error) {
