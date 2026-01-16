@@ -1,4 +1,6 @@
 import jwt from "jsonwebtoken";
+import twilioClient from "../../../config/twilio.js";
+import "../../../config/env.config.js";
 import {
   generateOtp,
   saveOtp,
@@ -16,71 +18,81 @@ import {
 /* -------------------------------------------------------------------------- */
 /*                                USER: SEND OTP                              */
 /* -------------------------------------------------------------------------- */
-export const sendOtp = async (req, res) => {
-  const { mobile } = req.body;
 
-  if (!mobile) {
-    return res.status(400).json({
-      success: false,
-      message: "Mobile number required",
+export const sendOtp = async (req, res) => {
+  try {
+    const { phone } = req.body;
+
+    if (!phone) {
+      return res.status(400).json({ message: "Phone number required" });
+    }
+
+    // Validate E.164 format: +1234567890
+    const e164Regex = /^\+[1-9]\d{1,14}$/;
+    if (!e164Regex.test(phone)) {
+      return res.status(400).json({
+        message: "Phone number must be in E.164 format (e.g., +12345678900)",
+      });
+    }
+
+    await twilioClient.verify.v2
+      .services(process.env.TWILIO_VERIFY_SERVICE_SID)
+      .verifications.create({
+        to: phone,
+        channel: "sms",
+      });
+
+    return res.status(200).json({
+      message: "OTP sent successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "Failed to send OTP",
+      error: error.message,
     });
   }
-
-  const otp = generateOtp();
-  await saveOtp(`user_${mobile}`, otp);
-
-  return res.status(200).json({
-    success: true,
-    message: "OTP sent",
-    otp, // ⚠️ remove in production
-  });
 };
 
 /* -------------------------------------------------------------------------- */
 /*                                USER: VERIFY OTP                            */
 /* -------------------------------------------------------------------------- */
-export const verifyOtp = async (req, res) => {
-  const { mobile, otp } = req.body;
 
-  if (!mobile || !otp) {
-    return res.status(400).json({
-      success: false,
-      message: "Mobile & OTP required",
+export const verifyOtp = async (req, res) => {
+  try {
+    const { phone, otp } = req.body;
+
+    if (!phone || !otp) {
+      return res.status(400).json({ message: "Phone & OTP required" });
+    }
+
+    const verification = await twilioClient.verify.v2
+      .services(process.env.TWILIO_VERIFY_SERVICE_SID)
+      .verificationChecks.create({
+        to: phone,
+        code: otp,
+      });
+
+    if (verification.status !== "approved") {
+      return res.status(401).json({ message: "Invalid OTP" });
+    }
+
+    // TODO: find or create user in DB
+    const user = { id: 1, phone };
+
+    const token = jwt.sign(user, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    return res.status(200).json({
+      message: "Login successful",
+      token,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: "OTP verification failed",
+      error: error.message,
     });
   }
-
-  const storedOtp = await verifyStoredOtp(`user_${mobile}`);
-
-  if (!storedOtp) {
-    return res.status(400).json({ success: false, message: "OTP expired" });
-  }
-
-  if (storedOtp !== otp) {
-    return res.status(400).json({ success: false, message: "Invalid OTP" });
-  }
-
-  await deleteOtp(`user_${mobile}`);
-
-  const user = await createOrGetUser(mobile);
-
-  const payload = {
-    userId: user.userId,
-    mobile_number: user.mobile_number,
-    role: "user",
-  };
-
-  const accessToken = generateAccessToken(payload);
-  const refreshToken = generateRefreshToken(payload);
-
-  await storeRefreshToken(`user_${mobile}`, refreshToken);
-
-  return res.status(200).json({
-    success: true,
-    message: "OTP verified successfully",
-    accessToken,
-    refreshToken,
-    user,
-  });
 };
 
 /* -------------------------------------------------------------------------- */
