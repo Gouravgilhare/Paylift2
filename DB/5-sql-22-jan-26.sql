@@ -26,7 +26,7 @@ USE paylift_db;
 	  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 	) ENGINE=InnoDB;
 
-	drop table user_table;
+
 
 	CREATE TABLE rider_table (
 	  riderId INT AUTO_INCREMENT PRIMARY KEY,
@@ -67,7 +67,7 @@ CREATE TABLE admin_table (
     firstname VARCHAR(100) NOT NULL,
     lastname VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
-  
+    mobile VARCHAR(15) UNIQUE NOT NULL,
     password VARCHAR(255) DEFAULT NULL, -- NULL for OTP-based auth
 
     role ENUM('admin', 'superadmin') DEFAULT 'admin',
@@ -79,19 +79,19 @@ CREATE TABLE admin_table (
     updated_by INT DEFAULT NULL,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
-        ON UPDATE CURRENT_TIMESTAMP,
-
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_admin_created_by 
         FOREIGN KEY (created_by) REFERENCES admin_table(admin_id),
 
     CONSTRAINT fk_admin_updated_by 
         FOREIGN KEY (updated_by) REFERENCES admin_table(admin_id)
 );
+
 INSERT INTO admin_table (
     firstname,
     lastname,
     email,
+    mobile,
     password,
     role,
     is_active
@@ -100,13 +100,27 @@ VALUES (
     'Super',
     'Admin',
     'superadmin@paylift.com',
+    '+919999999999',
     NULL,
     'superadmin',
     1
 );
 
-
-
+-- CREATE admin_log TABLE (if not exists)
+DROP TABLE IF EXISTS admin_log;
+CREATE TABLE admin_log (
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id INT NOT NULL,
+    action_type ENUM('INSERT', 'UPDATE', 'DELETE') NOT NULL,
+    old_data JSON DEFAULT NULL,
+    new_data JSON DEFAULT NULL,
+    action_by INT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_admin_log_admin FOREIGN KEY (admin_id) REFERENCES admin_table(admin_id) ON DELETE CASCADE,
+    CONSTRAINT fk_admin_log_action_by FOREIGN KEY (action_by) REFERENCES admin_table(admin_id) ON DELETE SET NULL,
+    INDEX idx_admin_id (admin_id),
+    INDEX idx_action_type (action_type)
+) ENGINE=InnoDB;
 
 -- ======================================================================
 -- 2) AUDIT LOG TABLES for user/rider/vehicle (JSON snapshots)
@@ -502,6 +516,15 @@ BEGIN
         'role', NEW.role,
         'is_active', NEW.is_active
     ), NEW.created_by);
+    
+    INSERT INTO admin_activity_log (
+        admin_id,
+        action
+    )
+    VALUES (
+        NEW.admin_id,
+        'ADMIN_CREATED'
+    );
 END;
 //
 DELIMITER ;
@@ -591,6 +614,15 @@ BEGIN
             'is_active', OLD.is_active
         ),
         OLD.updated_by
+    );
+    
+    INSERT INTO admin_activity_log (
+        admin_id,
+        action
+    )
+    VALUES (
+        OLD.admin_id,
+        'ADMIN_DELETED'
     );
 END;
 //
