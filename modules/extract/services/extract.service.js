@@ -61,7 +61,12 @@ async function preprocessRCImage(filePath) {
   const buffer = fs.readFileSync(filePath);
   try {
     return await sharp(buffer)
-      .resize({ width: 1500, height: 1000, fit: "contain", background: { r: 255, g: 255, b: 255 } })
+      .resize({
+        width: 1500,
+        height: 1000,
+        fit: "contain",
+        background: { r: 255, g: 255, b: 255 },
+      })
       .grayscale()
       .normalize()
       .sharpen()
@@ -282,7 +287,7 @@ export class ExtractService {
       while ((m = pattern2.exec(normalized)) !== null) {
         const rc = `${m[1]}${fixDigits(m[2])}${m[3]}${fixDigits(m[4])}`;
         if (isValidRC(rc)) {
-          candidates.push({ rc, confidence: 0.90 });
+          candidates.push({ rc, confidence: 0.9 });
           console.log("Pattern 2 match:", rc);
         }
       }
@@ -311,7 +316,12 @@ export class ExtractService {
       return { rc_number: null, raw_ocr: text, confidence: 0 };
     } catch (err) {
       console.error("RC extraction error:", err);
-      return { rc_number: null, raw_ocr: "", confidence: 0, error: err.message };
+      return {
+        rc_number: null,
+        raw_ocr: "",
+        confidence: 0,
+        error: err.message,
+      };
     }
   }
 }
