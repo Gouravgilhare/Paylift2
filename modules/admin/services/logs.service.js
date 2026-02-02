@@ -19,11 +19,14 @@ export const getAvailableLogFiles = () => {
     const files = fs.readdirSync(logsDir);
     return files
       .filter(file => file.endsWith('.log'))
-      .map(file => ({
-        name: file,
-        size: fs.statSync(path.join(logsDir, file)).size,
-        modified: fs.statSync(path.join(logsDir, file)).mtime
-      }));
+      .map(file => {
+        const stats = fs.statSync(path.join(logsDir, file));
+        return {
+          name: file,
+          size: stats.size,
+          modified: stats.mtime
+        };
+      });
   } catch (error) {
     throw new Error(`Failed to get log files: ${error.message}`);
   }

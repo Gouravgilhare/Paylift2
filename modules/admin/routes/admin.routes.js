@@ -57,7 +57,7 @@ router.get("/dashboard", adminController.getDashboardStats);
 
 // Logs Management
 router.get("/logs", logsController.getLogFilesList); // Get list of log files
-router.get("/logs/recent/:type", logsController.getRecentLogsByType); // Get recent logs by type
+router.get("/logs/recent/:type", logsController.getRecentLogsByType); // Get recent logs by type (must be before :filename route)
 router.get("/logs/:filename", logsController.getLogsByFilename); // Get logs from specific file
 router.delete("/logs/:filename", logsController.clearLogFile); // Clear log file (superadmin only)
 
