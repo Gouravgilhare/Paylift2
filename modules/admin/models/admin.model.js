@@ -86,6 +86,76 @@ export const deleteAdmin = async (adminId) => {
   return result;
 };
 
+/* ------------------ Vehicle Pricing ------------------ */
+
+// Create vehicle pricing
+export const createVehiclePricing = async ({
+  category,
+  base_fare,
+  per_km,
+  per_minute,
+  min_fare,
+  cancellation_fee,
+}) => {
+  const query = `
+    INSERT INTO vehicle_pricing (category, base_fare, per_km, per_minute, min_fare, cancellation_fee)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `;
+  const [result] = await pool.execute(query, [
+    category,
+    base_fare,
+    per_km,
+    per_minute,
+    min_fare,
+    cancellation_fee,
+  ]);
+  return result;
+};
+
+// Get pricing by category
+export const getPricingByCategory = async (category) => {
+  const query = `SELECT * FROM vehicle_pricing WHERE category = ?`;
+  const [rows] = await pool.execute(query, [category]);
+  return rows[0] || null;
+};
+
+// Get all vehicle pricing
+export const getAllVehiclePricing = async () => {
+  const query = `SELECT * FROM vehicle_pricing ORDER BY created_at DESC`;
+  const [rows] = await pool.execute(query);
+  return rows;
+};
+
+// Update vehicle pricing by category
+export const updateVehiclePricing = async (category, data) => {
+  const fields = [];
+  const values = [];
+
+  for (const key in data) {
+    if (data[key] !== undefined && key !== 'category') {
+      fields.push(`${key} = ?`);
+      values.push(data[key]);
+    }
+  }
+
+  if (fields.length === 0) return null;
+
+  const query = `UPDATE vehicle_pricing SET ${fields.join(
+    ", "
+  )} WHERE category = ?`;
+  values.push(category);
+
+  const [result] = await pool.execute(query, values);
+  return result;
+};
+
+// Delete vehicle pricing by category
+export const deleteVehiclePricing = async (category) => {
+  const query = `DELETE FROM vehicle_pricing WHERE category = ?`;
+  const [result] = await pool.execute(query, [category]);
+  return result;
+};
+
 /* ------------------ Dashboard Helpers ------------------ */
 
 // Count total admins (for analytics)
@@ -183,3 +253,4 @@ export const getAllTrips = async () => {
   const [rows] = await pool.execute(query);
   return rows;
 };
+

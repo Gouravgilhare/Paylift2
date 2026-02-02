@@ -17,7 +17,7 @@ router.post("/send-otp", sendAdminOtp); // Send OTP
 router.post("/verify-otp", verifyAdminOtp); // Verify OTP & get JWT
 router.post("/refresh-token", adminRefreshToken); // Refresh access token
 router.post("/logout", adminLogout); // Logout (requires JWT in header)
-
+// router.put("/update/pricing",)
 /* ============================
    ADMIN PROTECTED ROUTES
 ============================ */

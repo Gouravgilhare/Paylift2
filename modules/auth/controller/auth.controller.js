@@ -134,9 +134,7 @@ export const refreshAccessToken = async (req, res) => {
         });
       }
 
-      const stored = await getStoredRefreshToken(
-        `user_${decoded.mobile_number}`,
-      );
+      const stored = await getStoredRefreshToken(`user_${decoded.mobile}`);
 
       if (!stored || stored !== refreshToken) {
         return res.status(403).json({
