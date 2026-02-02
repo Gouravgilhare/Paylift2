@@ -31,7 +31,10 @@ paylift-backend/
 │   │
 │   ├─ admin/
 │   │   ├─ controllers/
-│   │   │   └─ admin.controller.js
+│   │   │   ├─ admin.controller.js
+│   │   │   └─ logs.controller.js
+│   │   ├─ services/
+│   │   │   └─ logs.service.js
 │   │   ├─ routes/
 │   │   │   └─ admin.routes.js
 │   │   └─ middleware/
@@ -179,6 +182,10 @@ GET    /api/admin/riders         → Get all riders (admin only)
 GET    /api/admin/vehicles       → Get all vehicles (admin only)
 GET    /api/admin/trips          → Get all trips (admin only)
 GET    /api/admin/dashboard      → Get dashboard stats (admin only)
+GET    /api/admin/logs           → Get list of log files (admin only)
+GET    /api/admin/logs/recent/:type  → Get recent logs by type (admin only)
+GET    /api/admin/logs/:filename → Get logs from specific file (admin only)
+DELETE /api/admin/logs/:filename → Clear log file (superadmin only)
 
 ┌───────────────────────┐
 │       User Module      │
@@ -343,6 +350,32 @@ npm run dev
 ```bash
 npm start
 ```
+
+---
+
+## Logging
+
+The application uses **Winston** for structured logging and **Morgan** for HTTP request logging. Logs are stored in the `/logs/` directory.
+
+### Log Files
+
+- `combined.log` - All logs (info, warn, error)
+- `error.log` - Error logs only
+- `http.log` - HTTP request logs
+- `database.log` - Database operation logs
+- `auth.log` - Authentication event logs
+- `http-requests.log` - Raw HTTP request logs (Morgan)
+
+### Log Management (Admin Only)
+
+Admins can view and manage logs through the API:
+
+- **GET /api/admin/logs** - List all log files with size and last modified date
+- **GET /api/admin/logs/:filename** - View logs from a specific file (supports pagination with `?lines=100&offset=0`)
+- **GET /api/admin/logs/recent/:type** - Get recent logs by type (e.g., `/api/admin/logs/recent/error?limit=50`)
+- **DELETE /api/admin/logs/:filename** - Clear a log file (superadmin only)
+
+All log endpoints require JWT authentication and admin role.
 
 ---
 
