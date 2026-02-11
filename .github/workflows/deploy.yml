@@ -20,7 +20,8 @@ jobs:
           host: ${{ secrets.SSH_HOST}}
           username: root
           key: ${{ secrets.SSH_KEY }}
-          script: cd /home/ubuntu/Paylift2
+          script: |
+            cd /home/ubuntu/Paylift2
             git pull
             docker compose down
             docker compose up -d --build
