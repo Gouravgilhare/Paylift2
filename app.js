@@ -61,7 +61,7 @@ app.use("/api/admin", adminRoutes);
 app.get("/", (req, res) => {
   res.status(200).json({
     message: "Paylift Backend API is running 🚀 ",
-    message: "Deployed via github actions ",
+    message2: "Deployed via github actions ",
   });
 });
 
