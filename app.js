@@ -32,7 +32,7 @@ app.use(
   cors({
     origin: "*",
     methods: "GET,POST,PUT,DELETE",
-  })
+  }),
 );
 
 app.use(helmet());
@@ -60,7 +60,8 @@ app.use("/api/admin", adminRoutes);
 // ================= BASIC HEALTH CHECK =================
 app.get("/", (req, res) => {
   res.status(200).json({
-    message: "Paylift Backend API is running 🚀",
+    message: "Paylift Backend API is running 🚀 ",
+    message: "Deployed via github actions ",
   });
 });
 
