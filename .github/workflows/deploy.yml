@@ -14,14 +14,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.0
-
+        uses: appleboy/ssh-action@v1
         with:
-          host: ${{ secrets.SSH_HOST}}
-          username: root
+          host: ${{ secrets.SSH_HOST }}
+          username: ubuntu
           key: ${{ secrets.SSH_KEY }}
           script: |
             cd /home/ubuntu/Paylift2
-            git pull
+            git fetch origin
+            git reset --hard origin/deploy
             docker compose down
             docker compose up -d --build
