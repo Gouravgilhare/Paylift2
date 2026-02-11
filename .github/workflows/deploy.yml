@@ -1,0 +1,27 @@
+name : Deploy Backend Application to AWS
+
+on :  
+  push :
+    branches :
+      - deploy
+
+jobs : 
+  deploy :
+    runs-on : ubuntu-latest
+
+    steps:
+      - name : Checkout Code
+        uses : actions/checkout@v4
+      
+      - name : Deploy via SSH
+        uses : appleboy/ssh-action@1.0.3
+        with : 
+          host: ${{ secrets.SSH_HOST}}
+          username : root
+          key : ${{ secrets.SSH_KEY }}
+          script : 
+            cd /home/ubuntu/Paylift2
+            git pull
+            docker compose down
+            docker compose up -d --build
+          
