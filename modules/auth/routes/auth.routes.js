@@ -4,8 +4,6 @@ import {
   verifyOtp,
   refreshAccessToken,
   logout,
-
-  // ADMIN
   sendAdminOtp,
   verifyAdminOtp,
   adminRefreshToken,

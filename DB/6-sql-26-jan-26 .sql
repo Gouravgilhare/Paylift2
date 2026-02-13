@@ -26,7 +26,7 @@ USE paylift_db;
 	  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 	) ENGINE=InnoDB;
 
-	drop table user_table;
+
 
 	CREATE TABLE rider_table (
 	  riderId INT AUTO_INCREMENT PRIMARY KEY,
@@ -42,7 +42,7 @@ USE paylift_db;
 CREATE TABLE vehicle_table (
   vehicleId INT AUTO_INCREMENT PRIMARY KEY,
   riderId INT NOT NULL,
-  category VARCHAR(50) NOT NULL,         -- e.g. bike, auto, mini, prime, suv
+  category ENUM('two_wheeler', 'four_wheeler') NOT NULL,
   vehicle_type VARCHAR(50),
   vehicle_number VARCHAR(20) UNIQUE,
   vehicle_name VARCHAR(25),
@@ -67,7 +67,7 @@ CREATE TABLE admin_table (
     firstname VARCHAR(100) NOT NULL,
     lastname VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
-  
+    mobile VARCHAR(15) UNIQUE NOT NULL,
     password VARCHAR(255) DEFAULT NULL, -- NULL for OTP-based auth
 
     role ENUM('admin', 'superadmin') DEFAULT 'admin',
@@ -79,34 +79,48 @@ CREATE TABLE admin_table (
     updated_by INT DEFAULT NULL,
 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP 
-        ON UPDATE CURRENT_TIMESTAMP,
-
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_admin_created_by 
         FOREIGN KEY (created_by) REFERENCES admin_table(admin_id),
 
     CONSTRAINT fk_admin_updated_by 
         FOREIGN KEY (updated_by) REFERENCES admin_table(admin_id)
 );
+
 INSERT INTO admin_table (
     firstname,
     lastname,
     email,
+    mobile,
     password,
     role,
     is_active
 )
 VALUES (
-    'Super',
-    'Admin',
-    'superadmin@paylift.com',
-    NULL,
+    'Gourav',
+    'Gilhare',
+    'gourav.gilhare2023@ssipmt.com',
+    '+918103013661',
+    'Gourav@1234',
     'superadmin',
     1
 );
 
-
-
+-- CREATE admin_log TABLE (if not exists)
+DROP TABLE IF EXISTS admin_log;
+CREATE TABLE admin_log (
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    admin_id INT NOT NULL,
+    action_type ENUM('INSERT', 'UPDATE', 'DELETE') NOT NULL,
+    old_data JSON DEFAULT NULL,
+    new_data JSON DEFAULT NULL,
+    action_by INT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_admin_log_admin FOREIGN KEY (admin_id) REFERENCES admin_table(admin_id) ON DELETE CASCADE,
+    CONSTRAINT fk_admin_log_action_by FOREIGN KEY (action_by) REFERENCES admin_table(admin_id) ON DELETE SET NULL,
+    INDEX idx_admin_id (admin_id),
+    INDEX idx_action_type (action_type)
+) ENGINE=InnoDB;
 
 -- ======================================================================
 -- 2) AUDIT LOG TABLES for user/rider/vehicle (JSON snapshots)
@@ -205,7 +219,7 @@ CREATE TABLE live_locations_log (
 -- ======================================================================
 CREATE TABLE vehicle_pricing (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  category VARCHAR(50) UNIQUE NOT NULL,
+  category ENUM('two_wheeler', 'four_wheeler') UNIQUE NOT NULL,
   base_fare DECIMAL(10,2) DEFAULT 0,
   per_km DECIMAL(10,2) DEFAULT 0,
   per_minute DECIMAL(10,2) DEFAULT 0,
@@ -227,7 +241,8 @@ CREATE TABLE trips (
     riderId INT,
     vehicleId INT,
 
-    vehicle_category VARCHAR(50) NOT NULL,
+    vehicle_category ENUM('two_wheeler', 'four_wheeler') NOT NULL,
+    gender_preference ENUM('Male', 'Female', 'Other') DEFAULT NULL,
 
     status ENUM(
         'requested',
@@ -325,7 +340,7 @@ CREATE TRIGGER trg_trips_before_insert
 BEFORE INSERT ON trips
 FOR EACH ROW
 BEGIN
-  DECLARE v_category VARCHAR(50);
+  DECLARE v_category ENUM('two_wheeler', 'four_wheeler');
   DECLARE v_per_km DECIMAL(10,2);
   DECLARE v_base DECIMAL(10,2);
   DECLARE v_per_min DECIMAL(10,2);
@@ -333,7 +348,7 @@ BEGIN
   -- get vehicle category from vehicle_table
   SELECT category INTO v_category FROM vehicle_table WHERE vehicleId = NEW.vehicleId LIMIT 1;
   IF v_category IS NULL THEN
-    SET v_category = 'unknown';
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid vehicleId or vehicle category not found';
   END IF;
 
   SET NEW.vehicle_category = v_category;
@@ -386,6 +401,7 @@ BEGIN
     'riderId', NEW.riderId,
     'vehicleId', NEW.vehicleId,
     'vehicle_category', NEW.vehicle_category,
+    'gender_preference', NEW.gender_preference,
     'status', NEW.status,
     'start_lat', NEW.start_lat,
     'start_lng', NEW.start_lng,
@@ -406,6 +422,7 @@ BEGIN
   INSERT INTO trip_audit_log (tripId, action, old_data, new_data)
   VALUES (OLD.tripId, 'UPDATE',
     JSON_OBJECT(
+      'gender_preference', OLD.gender_preference,
       'status', OLD.status,
       'start_lat', OLD.start_lat,
       'start_lng', OLD.start_lng,
@@ -415,6 +432,7 @@ BEGIN
       'total_fare', OLD.total_fare
     ),
     JSON_OBJECT(
+      'gender_preference', NEW.gender_preference,
       'status', NEW.status,
       'start_lat', NEW.start_lat,
       'start_lng', NEW.start_lng,
@@ -439,6 +457,7 @@ BEGIN
     'riderId', OLD.riderId,
     'vehicleId', OLD.vehicleId,
     'vehicle_category', OLD.vehicle_category,
+    'gender_preference', OLD.gender_preference,
     'status', OLD.status,
     'distance_km', OLD.distance_km,
     'total_fare', OLD.total_fare
@@ -502,6 +521,15 @@ BEGIN
         'role', NEW.role,
         'is_active', NEW.is_active
     ), NEW.created_by);
+    
+    INSERT INTO admin_activity_log (
+        admin_id,
+        action
+    )
+    VALUES (
+        NEW.admin_id,
+        'ADMIN_CREATED'
+    );
 END;
 //
 DELIMITER ;
@@ -592,6 +620,15 @@ BEGIN
         ),
         OLD.updated_by
     );
+    
+    INSERT INTO admin_activity_log (
+        admin_id,
+        action
+    )
+    VALUES (
+        OLD.admin_id,
+        'ADMIN_DELETED'
+    );
 END;
 //
 DELIMITER ;
@@ -614,17 +651,20 @@ CREATE PROCEDURE sp_create_trip (
   IN in_start_lng DECIMAL(10,7),
   IN in_end_lat DECIMAL(10,7),
   IN in_end_lng DECIMAL(10,7),
+  IN in_gender_preference ENUM('Male', 'Female', 'Other'),
   OUT out_tripId INT
 )
 BEGIN
-  DECLARE v_category VARCHAR(50);
+  DECLARE v_category ENUM('two_wheeler', 'four_wheeler');
   DECLARE v_base DECIMAL(10,2);
   DECLARE v_per_km DECIMAL(10,2);
   DECLARE v_per_min DECIMAL(10,2);
   DECLARE est_distance DECIMAL(10,4);
 
   SELECT category INTO v_category FROM vehicle_table WHERE vehicleId = in_vehicleId LIMIT 1;
-  IF v_category IS NULL THEN SET v_category = 'unknown'; END IF;
+  IF v_category IS NULL THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid vehicleId';
+  END IF;
 
   SELECT base_fare, per_km, per_minute INTO v_base, v_per_km, v_per_min
   FROM vehicle_pricing WHERE category = v_category LIMIT 1;
@@ -635,8 +675,8 @@ BEGIN
     SET est_distance = 0;
   END IF;
 
-  INSERT INTO trips (userId, riderId, vehicleId, vehicle_category, status, start_lat, start_lng, end_lat, end_lng, distance_km, duration_minutes, base_fare, price_per_km, price_per_min, total_fare)
-  VALUES (in_userId, in_riderId, in_vehicleId, v_category, 'requested', in_start_lat, in_start_lng, in_end_lat, in_end_lng, est_distance, 0, COALESCE(v_base,0), COALESCE(v_per_km,0), COALESCE(v_per_min,0), ROUND(COALESCE(v_base,0) + COALESCE(v_per_km,0)*est_distance,2));
+  INSERT INTO trips (userId, riderId, vehicleId, vehicle_category, gender_preference, status, start_lat, start_lng, end_lat, end_lng, distance_km, duration_minutes, base_fare, price_per_km, price_per_min, total_fare)
+  VALUES (in_userId, in_riderId, in_vehicleId, v_category, in_gender_preference, 'requested', in_start_lat, in_start_lng, in_end_lat, in_end_lng, est_distance, 0, COALESCE(v_base,0), COALESCE(v_per_km,0), COALESCE(v_per_min,0), ROUND(COALESCE(v_base,0) + COALESCE(v_per_km,0)*est_distance,2));
 
   SET out_tripId = LAST_INSERT_ID();
 END$$
@@ -660,8 +700,9 @@ BEGIN
   DECLARE pb DECIMAL(10,2);
   DECLARE ppm DECIMAL(10,2);
   DECLARE calc_fare DECIMAL(10,2);
+  DECLARE v_category ENUM('two_wheeler', 'four_wheeler');
 
-  SELECT start_lat, start_lng, price_per_km, base_fare, price_per_min INTO start_lat, start_lng, ppk, pb, ppm FROM trips WHERE tripId = in_tripId LIMIT 1;
+  SELECT start_lat, start_lng, price_per_km, base_fare, price_per_min, vehicle_category INTO start_lat, start_lng, ppk, pb, ppm, v_category FROM trips WHERE tripId = in_tripId LIMIT 1;
 
   -- try to compute distance from location_history if available
   SELECT SUM(distance_meters) INTO total_distance FROM location_history WHERE trip_id = in_tripId;
@@ -681,9 +722,9 @@ BEGIN
   SET calc_fare = ROUND(pb + (ppk * total_distance) + (ppm * total_minutes), 2);
 
   -- enforce min_fare from pricing table
-  IF (SELECT min_fare FROM vehicle_pricing WHERE category = (SELECT vehicle_category FROM trips WHERE tripId = in_tripId) LIMIT 1) IS NOT NULL THEN
-    IF calc_fare < (SELECT min_fare FROM vehicle_pricing WHERE category = (SELECT vehicle_category FROM trips WHERE tripId = in_tripId) LIMIT 1) THEN
-      SET calc_fare = (SELECT min_fare FROM vehicle_pricing WHERE category = (SELECT vehicle_category FROM trips WHERE tripId = in_tripId) LIMIT 1);
+  IF (SELECT min_fare FROM vehicle_pricing WHERE category = v_category LIMIT 1) IS NOT NULL THEN
+    IF calc_fare < (SELECT min_fare FROM vehicle_pricing WHERE category = v_category LIMIT 1) THEN
+      SET calc_fare = (SELECT min_fare FROM vehicle_pricing WHERE category = v_category LIMIT 1);
     END IF;
   END IF;
 
@@ -710,17 +751,16 @@ INSERT INTO rider_table (userId, driving_license) VALUES
 (1, 'DL-RIDER-001');
 
 INSERT INTO vehicle_table (riderId, category, vehicle_type, vehicle_number, rc_number, owner_name, owner_contact)
-VALUES (1, 'bike', 'two-wheeler', 'KA01AA0001', 'RC0001', 'Bob Owner', '9000000002');
+VALUES (1, 'two_wheeler', 'two-wheeler', 'KA01AA0001', 'RC0001', 'Bob Owner', '9000000002');
 
 INSERT INTO vehicle_pricing (category, base_fare, per_km, per_minute, min_fare, cancellation_fee)
 VALUES
-('bike', 20.00, 10.00, 0.5, 30.00, 20.00),
-('auto', 30.00, 12.00, 1.0, 40.00, 30.00),
-('mini', 50.00, 15.00, 2.0, 60.00, 50.00);
+('two_wheeler', 20.00, 10.00, 0.5, 30.00, 20.00),
+('four_wheeler', 50.00, 15.00, 2.0, 60.00, 50.00);
 
 -- Create a test trip using stored procedure
 SET @out_tid = 0;
-CALL sp_create_trip(1, 1, 1, 12.9715987, 77.5945627, 12.9758302, 77.6015546, @out_tid);
+CALL sp_create_trip(1, 1, 1, 12.9715987, 77.5945627, 12.9758302, 77.6015546, 'Male', @out_tid);
 SELECT @out_tid AS created_trip_id;
 
 -- ======================================================================

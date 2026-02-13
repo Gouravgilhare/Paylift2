@@ -56,7 +56,7 @@ const seedVehiclePricing = async () => {
         pricing.min_fare,
         pricing.cancellation_fee,
       ];
-      await pool.promise().query(query, values);
+      await pool.query(query, values);
     }
     console.log("   ✓ Vehicle pricing seeded");
   } catch (error) {

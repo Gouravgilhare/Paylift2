@@ -18,3 +18,6 @@ uploads/
 # OS
 .DS_Store
 Thumbs.db
+
+./paylift_github
+./paylift_github.pub

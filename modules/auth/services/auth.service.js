@@ -63,14 +63,14 @@ export const deleteRefreshToken = async (key) => {
 export const createOrGetUser = async (mobile) => {
   const [rows] = await db.query(
     "SELECT * FROM user_table WHERE mobile_number = ?",
-    [mobile]
+    [mobile],
   );
 
   if (rows.length) return rows[0];
 
   const [result] = await db.query(
     "INSERT INTO user_table (mobile_number, firstname, lastname) VALUES (?, ?, ?)",
-    [mobile, "Unknown", "Unknown"]
+    [mobile, "Unknown", "Unknown"],
   );
 
   const [user] = await db.query("SELECT * FROM user_table WHERE userId = ?", [
@@ -84,9 +84,9 @@ export const createOrGetUser = async (mobile) => {
 /*                               ADMIN SERVICES                               */
 /* ========================================================================== */
 
-export const getAdminByEmail = async (email) => {
-  const [rows] = await db.query("SELECT * FROM admin_table WHERE email = ?", [
-    email,
+export const getAdminByMobile = async (mobile) => {
+  const [rows] = await db.query("SELECT * FROM admin_table WHERE mobile = ?", [
+    mobile,
   ]);
 
   return rows.length ? rows[0] : null;

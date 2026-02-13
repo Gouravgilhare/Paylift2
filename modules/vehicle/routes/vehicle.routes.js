@@ -5,6 +5,7 @@ import { verifyToken } from "../../auth/middleware/auth.middleware.js";
 
 const router = Router();
 
+// Vehicle Routes
 router.post(
   "/register",
   verifyToken,
@@ -12,7 +13,7 @@ router.post(
     { name: "vehicle_image", maxCount: 1 },
     { name: "rc_image", maxCount: 1 },
   ]),
-  vehicleController.createVehicle
+  vehicleController.createVehicle,
 );
 
 router.get("/:vehicleId", verifyToken, vehicleController.getVehicle);
@@ -26,13 +27,49 @@ router.put(
     { name: "vehicle_image", maxCount: 1 },
     { name: "rc_image", maxCount: 1 },
   ]),
-  vehicleController.updateVehicle
+  vehicleController.updateVehicle,
 );
 
 router.delete(
   "/delete/:vehicleId",
   verifyToken,
-  vehicleController.deleteVehicle
+  vehicleController.deleteVehicle,
 );
+
+// Vehicle Pricing Routes
+router.post(
+  "/pricing/create",
+  verifyToken,
+  vehicleController.createVehiclePricing,
+);
+
+router.get("/pricing/all", vehicleController.getAllVehiclePricing);
+
+router.get("/pricing/id/:id", vehicleController.getVehiclePricingById);
+
+router.get(
+  "/pricing/category/:category",
+  vehicleController.getVehiclePricingByCategory,
+);
+
+router.put(
+  "/pricing/update/id/:id",
+  verifyToken,
+  vehicleController.updateVehiclePricingById,
+);
+
+router.put(
+  "/pricing/update/category/:category",
+  verifyToken,
+  vehicleController.updateVehiclePricingByCategory,
+);
+
+router.delete(
+  "/pricing/delete/:id",
+  verifyToken,
+  vehicleController.deleteVehiclePricing,
+);
+
+router.get("/pricing/stats", vehicleController.getPricingStats);
 
 export default router;
