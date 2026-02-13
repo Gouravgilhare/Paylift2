@@ -42,7 +42,15 @@ services:
       retries: 10
     restart: on-failure
 
- 
+  redis:
+    image: redis:8.0
+    container_name: paylift2-redis
+    ports:
+      - 6379:6379
+    networks:
+      - paylift-network
+    restart: on-failure
+    
 volumes:
   mysql_data:
 
