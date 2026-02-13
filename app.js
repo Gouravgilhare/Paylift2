@@ -58,11 +58,22 @@ app.use("/api/extract/", extractRoutes);
 app.use("/api/admin", adminRoutes);
 
 // ================= BASIC HEALTH CHECK =================
-app.get("/", (req, res) => {
-  res.status(200).json({
-    message: "Paylift Backend API is running 🚀 ",
-    message2: "Deployed via github actions ",
-  });
+app.get("/", async (req, res) => {
+  try {
+    const [result] = await pool.query("SHOW TABLES");
+
+    res.status(200).json({
+      message: "Paylift Backend API is running 🚀",
+      message2: "Deployed via github actions",
+      DB_Connection:
+        result.length >= 0 ? "DB is Connected!!" : "DB issue detected",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Backend running but DB not connected ❌",
+      error: error.message,
+    });
+  }
 });
 
 // ================= ERROR HANDLER =================
