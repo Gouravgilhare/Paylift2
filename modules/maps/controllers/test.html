@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>My Map</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyC1esC7WgaYHQ3xR2V8UVCbzv4xfNRHj7Q&callback=initMap"
+        async defer></script>
+    <style>
+        #map {
+            height: 400px;
+            width: 100%;
+        }
+    </style>
+    <script>
+        function initMap() {
+            const location = { lat: 23.1793, lng: 75.7849 }; // replace with your coordinates
+            const map = new google.maps.Map(document.getElementById("map"), {
+                zoom: 15,
+                center: location,
+            });
+            const marker = new google.maps.Marker({
+                position: location,
+                map: map,
+            });
+        }
+    </script>
+</head>
+
+<body>
+    <h3>My Custom Map</h3>
+    <div id="map"></div>
+</body>
+
+</html>

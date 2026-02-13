@@ -24,7 +24,7 @@ import tripRoutes from "./modules/trips/routes/trip.routes.js";
 import locationRoutes from "./modules/location/routes/location.routes.js";
 import extractRoutes from "./modules/extract/routes/extract.routes.js";
 import adminRoutes from "./modules/admin/routes/admin.routes.js";
-
+import mapRoutes from "./modules/maps/routes/maps.routes.js";
 const app = express();
 
 // ================= MIDDLEWARES =================
@@ -56,6 +56,7 @@ app.use("/api/location", locationRoutes);
 app.use("/api/trips", tripRoutes);
 app.use("/api/extract/", extractRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/maps", mapRoutes);
 
 // ================= BASIC HEALTH CHECK =================
 app.get("/", async (req, res) => {
