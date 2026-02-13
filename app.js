@@ -7,7 +7,7 @@ import { requestLogger } from "./middleware/logging.middleware.js";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
-
+import pool from "./config/db.config.js";
 // Load .env
 dotenv.config();
 

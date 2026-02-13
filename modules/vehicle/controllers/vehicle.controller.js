@@ -223,7 +223,7 @@ class VehicleController {
 
   async getPricingStats(req, res) {
     try {
-      const stats = await vehicleService.getPricingStats();
+      const stats = await vehicleService.getPricingwStats();
       res.json({ success: true, data: stats });
     } catch (error) {
       res.status(500).json({ success: false, message: "Server error" });
