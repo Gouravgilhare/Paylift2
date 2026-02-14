@@ -1,4 +1,3 @@
-import fs from "fs";
 import { extractService } from "../services/extract.service.js";
 
 class ExtractController {
@@ -11,7 +10,7 @@ class ExtractController {
           .json({ success: false, message: "PDF file is required" });
       }
 
-      const result = await extractService.extractInsurance(req.file.path);
+      const result = await extractService.extractInsurance(req.file.buffer);
 
       return res.json({
         success: true,
@@ -20,15 +19,11 @@ class ExtractController {
       });
     } catch (err) {
       console.error("Insurance extraction error:", err);
-      return res
-        .status(500)
-        .json({
-          success: false,
-          message: "Failed to extract insurance data",
-          error: err.message,
-         });
-    } finally {
-      if (req.file?.path) fs.unlink(req.file.path, () => {});
+      return res.status(500).json({
+        success: false,
+        message: "Failed to extract insurance data",
+        error: err.message,
+      });
     }
   }
 
@@ -41,7 +36,7 @@ class ExtractController {
           .json({ success: false, message: "Image file is required" });
       }
 
-      const result = await extractService.extractRCNumber(req.file.path);
+      const result = await extractService.extractRCNumber(req.file.buffer);
 
       return res.json({
         success: true,
@@ -50,11 +45,10 @@ class ExtractController {
       });
     } catch (err) {
       console.error("RC extraction error:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Failed to extract RC number" });
-    } finally {
-      if (req.file?.path) fs.unlink(req.file.path, () => {});
+      return res.status(500).json({
+        success: false,
+        message: "Failed to extract RC number",
+      });
     }
   }
 
@@ -67,7 +61,7 @@ class ExtractController {
           .json({ success: false, message: "Image file is required" });
       }
 
-      const result = await extractService.extractVehicleNumber(req.file.path);
+      const result = await extractService.extractVehicleNumber(req.file.buffer);
 
       return res.json({
         success: true,
@@ -76,11 +70,10 @@ class ExtractController {
       });
     } catch (err) {
       console.error("Number plate extraction error:", err);
-      return res
-        .status(500)
-        .json({ success: false, message: "Failed to extract number plate" });
-    } finally {
-      if (req.file?.path) fs.unlink(req.file.path, () => {});
+      return res.status(500).json({
+        success: false,
+        message: "Failed to extract number plate",
+      });
     }
   }
 
@@ -93,7 +86,7 @@ class ExtractController {
           .json({ success: false, message: "Image file is required" });
       }
 
-      const result = await extractService.extractDLNumber(req.file.path);
+      const result = await extractService.extractDLNumber(req.file.buffer);
 
       return res.json({
         success: true,
@@ -107,8 +100,6 @@ class ExtractController {
         message: "Failed to extract DL number",
         error: err.message,
       });
-    } finally {
-      if (req.file?.path) fs.unlink(req.file.path, () => {});
     }
   }
 }

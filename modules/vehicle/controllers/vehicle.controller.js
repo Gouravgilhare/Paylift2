@@ -1,17 +1,18 @@
+import { uploadToGCS } from "../../../config/multer.config.js";
 import { vehicleService } from "../services/vehicle.service.js";
 
 class VehicleController {
   // Create vehicle
   async createVehicle(req, res) {
     try {
-      const data = req.body;
+      const data = { ...req.body };
 
-      // File uploads
       if (req.files?.vehicle_image) {
-        data.vehicle_image = req.files.vehicle_image[0].path;
+        data.vehicle_image = await uploadToGCS(req.files.vehicle_image[0]);
       }
+
       if (req.files?.rc_image) {
-        data.rc_image = req.files.rc_image[0].path;
+        data.rc_image = await uploadToGCS(req.files.rc_image[0]);
       }
 
       const vehicle = await vehicleService.createVehicle(data);
@@ -27,29 +28,11 @@ class VehicleController {
     }
   }
 
-  // Get vehicle
-  async getVehicle(req, res) {
-    try {
-      const { vehicleId } = req.params;
-      const vehicle = await vehicleService.getVehicleById(vehicleId);
-
-      if (!vehicle)
-        return res
-          .status(404)
-          .json({ success: false, message: "Vehicle not found" });
-
-      res.json({ success: true, data: vehicle });
-    } catch (error) {
-      res.status(500).json({ success: false, message: "Server error" });
-    }
-  }
-
   // Get vehicles by rider
   async getRiderVehicles(req, res) {
     try {
       const { riderId } = req.params;
       const vehicles = await vehicleService.getVehiclesByRider(riderId);
-
       res.json({ success: true, data: vehicles });
     } catch (error) {
       res.status(500).json({ success: false, message: "Server error" });
@@ -63,21 +46,28 @@ class VehicleController {
       const data = req.body;
 
       if (req.files?.vehicle_image) {
-        data.vehicle_image = req.files.vehicle_image[0].path;
+        data.vehicle_image = await uploadToGCS(req.files.vehicle_image[0]);
       }
+
       if (req.files?.rc_image) {
-        data.rc_image = req.files.rc_image[0].path;
+        data.rc_image = await uploadToGCS(req.files.rc_image[0]);
       }
 
       const updated = await vehicleService.updateVehicle(vehicleId, data);
 
-      if (!updated)
-        return res
-          .status(404)
-          .json({ success: false, message: "Vehicle not found" });
+      if (!updated) {
+        return res.status(404).json({
+          success: false,
+          message: "Vehicle not found",
+        });
+      }
 
-      res.json({ success: true, message: "Vehicle updated successfully" });
+      res.json({
+        success: true,
+        message: "Vehicle updated successfully",
+      });
     } catch (error) {
+      console.error("Vehicle update error:", error);
       res.status(500).json({ success: false, message: "Server error" });
     }
   }
@@ -89,31 +79,33 @@ class VehicleController {
 
       const deleted = await vehicleService.deleteVehicle(vehicleId);
 
-      if (!deleted)
-        return res
-          .status(404)
-          .json({ success: false, message: "Vehicle not found" });
+      if (!deleted) {
+        return res.status(404).json({
+          success: false,
+          message: "Vehicle not found",
+        });
+      }
 
-      res.json({ success: true, message: "Vehicle deleted successfully" });
+      res.json({
+        success: true,
+        message: "Vehicle deleted successfully",
+      });
     } catch (error) {
       res.status(500).json({ success: false, message: "Server error" });
     }
   }
 
-  // Vehicle Pricing Methods
+  // ================= PRICING =================
+
   async createVehiclePricing(req, res) {
     try {
-      const data = req.body;
-      const result = await vehicleService.createVehiclePricing(data);
-
-      return res.status(201).json({
+      const result = await vehicleService.createVehiclePricing(req.body);
+      res.status(201).json({
         success: true,
         message: "Vehicle pricing created successfully",
         data: result,
       });
     } catch (error) {
-      console.error("Pricing create error:", error.message);
-      console.error("Error details:", error);
       res.status(500).json({
         success: false,
         message: error.message || "Server error",
@@ -123,34 +115,31 @@ class VehicleController {
 
   async getVehiclePricingById(req, res) {
     try {
-      const { id } = req.params;
-      const pricing = await vehicleService.getVehiclePricingById(id);
-
-      if (!pricing)
+      const pricing = await vehicleService.getVehiclePricingById(req.params.id);
+      if (!pricing) {
         return res
           .status(404)
           .json({ success: false, message: "Pricing not found" });
-
+      }
       res.json({ success: true, data: pricing });
-    } catch (error) {
+    } catch {
       res.status(500).json({ success: false, message: "Server error" });
     }
   }
 
   async getVehiclePricingByCategory(req, res) {
     try {
-      const { category } = req.params;
-      const pricing =
-        await vehicleService.getVehiclePricingByCategory(category);
-
-      if (!pricing)
+      const pricing = await vehicleService.getVehiclePricingByCategory(
+        req.params.category,
+      );
+      if (!pricing) {
         return res.status(404).json({
           success: false,
           message: "Pricing not found for this category",
         });
-
+      }
       res.json({ success: true, data: pricing });
-    } catch (error) {
+    } catch {
       res.status(500).json({ success: false, message: "Server error" });
     }
   }
@@ -159,64 +148,56 @@ class VehicleController {
     try {
       const pricing = await vehicleService.getAllVehiclePricing();
       res.json({ success: true, data: pricing });
-    } catch (error) {
+    } catch {
       res.status(500).json({ success: false, message: "Server error" });
     }
   }
 
   async updateVehiclePricingById(req, res) {
     try {
-      const { id } = req.params;
-      const data = req.body;
-
-      const updated = await vehicleService.updateVehiclePricingById(id, data);
-
-      if (!updated)
+      const updated = await vehicleService.updateVehiclePricingById(
+        req.params.id,
+        req.body,
+      );
+      if (!updated) {
         return res
           .status(404)
           .json({ success: false, message: "Pricing not found" });
-
+      }
       res.json({ success: true, message: "Pricing updated successfully" });
-    } catch (error) {
+    } catch {
       res.status(500).json({ success: false, message: "Server error" });
     }
   }
 
   async updateVehiclePricingByCategory(req, res) {
     try {
-      const { category } = req.params;
-      const data = req.body;
-
       const updated = await vehicleService.updateVehiclePricingByCategory(
-        category,
-        data,
+        req.params.category,
+        req.body,
       );
-
-      if (!updated)
+      if (!updated) {
         return res.status(404).json({
           success: false,
           message: "Pricing not found for this category",
         });
-
+      }
       res.json({ success: true, message: "Pricing updated successfully" });
-    } catch (error) {
+    } catch {
       res.status(500).json({ success: false, message: "Server error" });
     }
   }
 
   async deleteVehiclePricing(req, res) {
     try {
-      const { id } = req.params;
-
-      const deleted = await vehicleService.deleteVehiclePricing(id);
-
-      if (!deleted)
+      const deleted = await vehicleService.deleteVehiclePricing(req.params.id);
+      if (!deleted) {
         return res
           .status(404)
           .json({ success: false, message: "Pricing not found" });
-
+      }
       res.json({ success: true, message: "Pricing deleted successfully" });
-    } catch (error) {
+    } catch {
       res.status(500).json({ success: false, message: "Server error" });
     }
   }
@@ -225,7 +206,7 @@ class VehicleController {
     try {
       const stats = await vehicleService.getPricingwStats();
       res.json({ success: true, data: stats });
-    } catch (error) {
+    } catch {
       res.status(500).json({ success: false, message: "Server error" });
     }
   }

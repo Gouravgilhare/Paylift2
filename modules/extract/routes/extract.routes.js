@@ -5,36 +5,32 @@ import { verifyToken } from "../../auth/middleware/auth.middleware.js";
 
 const router = Router();
 
-// 🔹 Insurance PDF
 router.post(
   "/insurance",
   verifyToken,
   upload.single("document"),
-  extractController.extractInsuranceFromPDF
+  extractController.extractInsuranceFromPDF,
 );
 
-// 🔹 RC Card Image
 router.post(
   "/rc-card",
   verifyToken,
   upload.single("document"),
-  extractController.extractRCFromImage
+  extractController.extractRCFromImage,
 );
 
-// 🔹 Number Plate Image
 router.post(
   "/number-plate",
   verifyToken,
   upload.single("document"),
-  extractController.extractNumberPlate
+  extractController.extractNumberPlate,
 );
 
-// 🔹 Driving License Image
 router.post(
   "/driving-license",
   verifyToken,
   upload.single("document"),
-  extractController.extractDLFromImage
+  extractController.extractDLFromImage,
 );
 
 export default router;

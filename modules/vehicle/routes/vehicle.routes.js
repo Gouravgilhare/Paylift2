@@ -5,7 +5,7 @@ import { verifyToken } from "../../auth/middleware/auth.middleware.js";
 
 const router = Router();
 
-// Vehicle Routes
+// ✅ Vehicle Registration
 router.post(
   "/register",
   verifyToken,
@@ -16,10 +16,7 @@ router.post(
   vehicleController.createVehicle,
 );
 
-router.get("/:vehicleId", verifyToken, vehicleController.getVehicle);
-
-router.get("/rider/:riderId", verifyToken, vehicleController.getRiderVehicles);
-
+// ✅ Update Vehicle
 router.put(
   "/update/:vehicleId",
   verifyToken,
@@ -30,13 +27,21 @@ router.put(
   vehicleController.updateVehicle,
 );
 
+// ✅ Get Vehicles by Rider (specific route FIRST)
+router.get("/rider/:riderId", verifyToken, vehicleController.getRiderVehicles);
+
+// ✅ Get Vehicle by ID (dynamic route AFTER specific routes)
+router.get("/:vehicleId", verifyToken, vehicleController.getVehiclePricingById);
+
+// ✅ Delete Vehicle
 router.delete(
   "/delete/:vehicleId",
   verifyToken,
   vehicleController.deleteVehicle,
 );
 
-// Vehicle Pricing Routes
+// ------------------ Pricing Routes ------------------
+
 router.post(
   "/pricing/create",
   verifyToken,

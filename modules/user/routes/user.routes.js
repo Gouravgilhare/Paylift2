@@ -11,26 +11,26 @@ import upload from "../../../config/multer.config.js";
 
 const router = Router();
 
-// Get user by ID
-router.get("/:userid", verifyToken, getUserById);
-
-// Update user by ID
-router.put(
-  "/update/:userid",
-  verifyToken,
-  upload.fields([{ name: "user_image", maxCount: 1 }]),
-  updateUserById
-);
-
-// Register new user
+// ✅ Register new user
 router.post(
   "/register",
   verifyToken,
   upload.fields([{ name: "user_image", maxCount: 1 }]),
-  registerUser
+  registerUser,
 );
 
-// Delete user by ID
+// ✅ Update user by ID
+router.put(
+  "/update/:userid",
+  verifyToken,
+  upload.fields([{ name: "user_image", maxCount: 1 }]),
+  updateUserById,
+);
+
+// ✅ Get user by ID
+router.get("/:userid", verifyToken, getUserById);
+
+// ✅ Delete user by ID
 router.delete("/:userid", verifyToken, deleteUserById);
 
 export default router;

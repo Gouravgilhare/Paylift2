@@ -11,11 +11,11 @@ export const getRiderById = async (req, res) => {
   try {
     const rider = await getRiderByIdService(req.params.riderid);
 
-    if (!rider) return res.status(404).json({ message: "Rider not found" });
+    if (!rider) {
+      return res.status(404).json({ message: "Rider not found" });
+    }
 
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-    if (rider.dl_image) rider.dl_image = `${baseUrl}/${rider.dl_image}`;
-
+    // ✅ No baseUrl modification (GCS URL already complete)
     res.status(200).json({ rider });
   } catch (err) {
     console.error("Error:", err);
@@ -27,10 +27,14 @@ export const getRiderById = async (req, res) => {
 export const getRiderByUserId = async (req, res) => {
   try {
     const rider = await getRiderByUserIdService(req.params.userid);
-    if (!rider) return res.status(404).json({ message: "Rider not found" });
+
+    if (!rider) {
+      return res.status(404).json({ message: "Rider not found" });
+    }
+
     res.status(200).json({ rider });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -39,14 +43,17 @@ export const getRiderByUserId = async (req, res) => {
 export const createRider = async (req, res) => {
   try {
     const newRider = await createRiderService(req.body, req.files);
-    res
-      .status(201)
-      .json({ message: "Rider registered successfully", newRider });
+
+    res.status(201).json({
+      message: "Rider registered successfully",
+      newRider,
+    });
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({ message: "Internal server error", error: err.message });
+    res.status(500).json({
+      message: "Internal server error",
+      error: err.message,
+    });
   }
 };
 
@@ -56,14 +63,16 @@ export const updateRider = async (req, res) => {
     const updated = await updateRiderService(
       req.params.riderid,
       req.body,
-      req.files
+      req.files,
     );
 
-    if (!updated) return res.status(404).json({ message: "Rider not found" });
+    if (!updated) {
+      return res.status(404).json({ message: "Rider not found" });
+    }
 
     res.status(200).json({ message: "Rider updated successfully" });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -73,11 +82,13 @@ export const deleteRider = async (req, res) => {
   try {
     const deleted = await deleteRiderService(req.params.riderid);
 
-    if (!deleted) return res.status(404).json({ message: "Rider not found" });
+    if (!deleted) {
+      return res.status(404).json({ message: "Rider not found" });
+    }
 
     res.status(200).json({ message: "Rider deleted successfully" });
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).json({ message: "Internal server error" });
   }
 };

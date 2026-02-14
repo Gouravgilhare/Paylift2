@@ -1,8 +1,6 @@
 import bcryptConfig from "../../../config/bcrypt.config.js";
 import { userModel } from "../models/user.model.js";
-
-// Multer is used in your ROUTE, not inside service.
-// So no need to import multer here.
+import { uploadToGCS } from "../../../config/multer.config.js";
 
 /* ------------------------------ Get User By ID ------------------------------ */
 export const getUserByIdService = async (userId) => {
@@ -24,13 +22,17 @@ export const registerUserService = async (userInput, files) => {
     status = "active",
   } = userInput;
 
-  // Hash PIN only if provided
+  // Hash PIN if provided
   const hashedPin = security_pin
     ? await bcryptConfig.hashPassword(security_pin)
     : null;
 
-  // Get file path from Multer
-  const image_add = files?.user_image?.[0]?.path || null;
+  let image_add = null;
+
+  // 🔥 Upload to GCS instead of using file.path
+  if (files?.user_image?.[0]) {
+    image_add = await uploadToGCS(files.user_image[0]);
+  }
 
   const newUser = await userModel.createUser({
     firstname,
@@ -58,15 +60,15 @@ export const deleteUserByIdService = async (userId) => {
 export const updateUserByIdService = async (userId, updates, files) => {
   let updatedData = { ...updates };
 
-  // Only update image if a new file is uploaded
-  if (files?.user_image?.[0]?.path) {
-    updatedData.image_add = files.user_image[0].path;
+  // 🔥 Upload new image to GCS if provided
+  if (files?.user_image?.[0]) {
+    updatedData.image_add = await uploadToGCS(files.user_image[0]);
   }
 
   // Hash new security pin if provided
   if (updates.security_pin) {
     updatedData.security_pin = await bcryptConfig.hashPassword(
-      updates.security_pin
+      updates.security_pin,
     );
   }
 

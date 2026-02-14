@@ -8,6 +8,8 @@ import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import pool from "./config/db.config.js";
+import { bucket } from "./config/multer.config.js";
+
 // Load .env
 dotenv.config();
 
@@ -25,6 +27,7 @@ import locationRoutes from "./modules/location/routes/location.routes.js";
 import extractRoutes from "./modules/extract/routes/extract.routes.js";
 import adminRoutes from "./modules/admin/routes/admin.routes.js";
 import mapRoutes from "./modules/maps/routes/maps.routes.js";
+
 const app = express();
 
 // ================= MIDDLEWARES =================
@@ -61,17 +64,24 @@ app.use("/api/maps", mapRoutes);
 // ================= BASIC HEALTH CHECK =================
 app.get("/", async (req, res) => {
   try {
+    // DB Check
     const [result] = await pool.query("SHOW TABLES");
+
+    // GCS Bucket Check
+    const [exists] = await bucket.exists();
 
     res.status(200).json({
       message: "Paylift Backend API is running 🚀",
       message2: "Deployed via github actions",
       DB_Connection:
         result.length >= 0 ? "DB is Connected!!" : "DB issue detected",
+      Multer_Storage: exists
+        ? "Multer is connected with GCS bucket ✅"
+        : "Multer not connected with GCS bucket ❌",
     });
   } catch (error) {
     res.status(500).json({
-      message: "Backend running but DB not connected ❌",
+      message: "Backend running but service issue ❌",
       error: error.message,
     });
   }

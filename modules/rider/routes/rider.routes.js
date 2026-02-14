@@ -12,21 +12,24 @@ import {
 
 const router = Router();
 
-router.get("/:riderid", verifyToken, getRiderById);
+// ✅ Specific routes first (avoid conflicts)
 router.get("/user/:userid", verifyToken, getRiderByUserId);
+router.get("/:riderid", verifyToken, getRiderById);
 
+// ✅ Register rider (DL image upload)
 router.post(
   "/register",
   verifyToken,
   upload.fields([{ name: "dl_image", maxCount: 1 }]),
-  createRider
+  createRider,
 );
 
+// ✅ Update rider (DL image optional)
 router.put(
-  "/update/:riderid", 
+  "/update/:riderid",
   verifyToken,
   upload.fields([{ name: "dl_image", maxCount: 1 }]),
-  updateRider
+  updateRider,
 );
 
 router.delete("/delete/:riderid", verifyToken, deleteRider);
