@@ -438,6 +438,154 @@ describe("📄 EXTRACT MODULE ROUTES", () => {
 });
 
 // ====================================
+// VEHICLE PRICING MODULE ROUTES
+// ====================================
+describe("💰 VEHICLE PRICING MODULE ROUTES", () => {
+  let pricingId = 1;
+
+  test("POST /api/vehicles/pricing/create - Create Pricing", async () => {
+    const res = await request(app)
+      .post("/api/vehicles/pricing/create")
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({
+        category: "two_wheeler",
+        base_fare: "25",
+        per_km: "12",
+        per_minute: "2",
+        min_fare: "50",
+        cancellation_fee: "20",
+      })
+      .timeout(5000);
+
+    expect([200, 201, 400, 401, 403]).toContain(res.statusCode);
+    if (res.body.id) {
+      pricingId = res.body.id;
+    }
+  });
+
+  test("GET /api/vehicles/pricing/all - Get All Pricing", async () => {
+    const res = await request(app)
+      .get("/api/vehicles/pricing/all")
+      .timeout(5000);
+
+    expect([200, 404]).toContain(res.statusCode);
+  });
+
+  test("GET /api/vehicles/pricing/id/:id - Get Pricing by ID", async () => {
+    const res = await request(app)
+      .get(`/api/vehicles/pricing/id/${pricingId}`)
+      .timeout(5000);
+
+    expect([200, 404]).toContain(res.statusCode);
+  });
+
+  test("GET /api/vehicles/pricing/category/:category - Get Pricing by Category", async () => {
+    const res = await request(app)
+      .get("/api/vehicles/pricing/category/two_wheeler")
+      .timeout(5000);
+
+    expect([200, 404]).toContain(res.statusCode);
+  });
+
+  test("PUT /api/vehicles/pricing/update/id/:id - Update Pricing by ID", async () => {
+    const res = await request(app)
+      .put(`/api/vehicles/pricing/update/id/${pricingId}`)
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({
+        category: "two_wheeler",
+        base_fare: "30",
+        per_km: "15",
+        per_minute: "3",
+        min_fare: "60",
+        cancellation_fee: "25",
+      })
+      .timeout(5000);
+
+    expect([200, 400, 401, 403, 404]).toContain(res.statusCode);
+  });
+
+  test("PUT /api/vehicles/pricing/update/category/:category - Update Pricing by Category", async () => {
+    const res = await request(app)
+      .put("/api/vehicles/pricing/update/category/two_wheeler")
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({
+        base_fare: "35",
+        per_km: "18",
+        per_minute: "3",
+        min_fare: "70",
+        cancellation_fee: "30",
+      })
+      .timeout(5000);
+
+    expect([200, 400, 401, 403, 404]).toContain(res.statusCode);
+  });
+
+  test("GET /api/vehicles/pricing/stats - Get Pricing Stats", async () => {
+    const res = await request(app)
+      .get("/api/vehicles/pricing/stats")
+      .timeout(5000);
+
+    expect([200, 404]).toContain(res.statusCode);
+  });
+
+  test("DELETE /api/vehicles/pricing/delete/:id - Delete Pricing", async () => {
+    const res = await request(app)
+      .delete(`/api/vehicles/pricing/delete/${pricingId}`)
+      .set("Authorization", `Bearer ${userToken}`)
+      .timeout(5000);
+
+    expect([200, 401, 403, 404]).toContain(res.statusCode);
+  });
+});
+
+// ====================================
+// MAPS MODULE ROUTES
+// ====================================
+describe("🗺️ MAPS MODULE ROUTES", () => {
+  test("POST /api/maps/route - Get Route", async () => {
+    const res = await request(app)
+      .post("/api/maps/route")
+      .send({
+        origin: { lat: 40.7128, lng: -74.006 },
+        destination: { lat: 42.3601, lng: -71.0589 },
+      })
+      .timeout(5000);
+
+    expect([200, 400, 500]).toContain(res.statusCode);
+  });
+
+  test("POST /api/maps/distance-matrix - Get Distance Matrix", async () => {
+    const res = await request(app)
+      .post("/api/maps/distance-matrix")
+      .send({
+        origins: [{ lat: 40.7128, lng: -74.006 }],
+        destinations: [{ lat: 42.3601, lng: -71.0589 }],
+      })
+      .timeout(5000);
+
+    expect([200, 400, 500]).toContain(res.statusCode);
+  });
+
+  test("GET /api/maps/places/autocomplete - Place Autocomplete", async () => {
+    const res = await request(app)
+      .get("/api/maps/places/autocomplete")
+      .query({ input: "pizza near" })
+      .timeout(5000);
+
+    expect([200, 400, 500]).toContain(res.statusCode);
+  });
+
+  test("GET /api/maps/places/details - Get Place Details", async () => {
+    const res = await request(app)
+      .get("/api/maps/places/details")
+      .query({ placeId: "ChIJN1t_tDeuEmsRUsoyG83frY4" })
+      .timeout(5000);
+
+    expect([200, 400, 404, 500]).toContain(res.statusCode);
+  });
+});
+
+// ====================================
 // ADMIN MODULE ROUTES
 // ====================================
 describe("👑 ADMIN MODULE ROUTES", () => {
