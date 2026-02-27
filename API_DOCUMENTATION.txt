@@ -1,0 +1,805 @@
+================================================================================
+                        PAYLIFT API DOCUMENTATION
+================================================================================
+
+Base URL: http://localhost:6000/api
+API Version: 2.0
+
+================================================================================
+AUTHENTICATION
+================================================================================
+
+Most endpoints require Bearer Token authentication. Include the token in the
+Authorization header:
+  Authorization: Bearer <your_token>
+
+
+================================================================================
+1. USER ENDPOINTS
+================================================================================
+
+1.1 Get User by ID
+------------------
+Method:  GET
+URL:     /users/:userid
+Auth:    Bearer Token Required
+Example: GET /users/1
+
+Description: Retrieves user information by user ID.
+
+
+1.2 Register User
+-----------------
+Method:  POST
+URL:     /users/register
+Auth:    Bearer Token Required
+Content: multipart/form-data
+
+Request Body (Form Data):
+  - firstname       (text)      : User's first name
+  - lastname        (text)      : User's last name
+  - gender          (text)      : User's gender (e.g., "male", "female")
+  - dob             (text)      : Date of birth (format: YYYY-MM-DD)
+  - aadhar          (text)      : Aadhar number (12 digits)
+  - mobile_number   (text)      : Mobile number
+  - email           (text)      : Email address
+  - security_pin    (text)      : Security PIN
+  - status          (text)      : Account status (e.g., "active")
+  - user_image      (file)      : User profile image
+
+Example Request:
+  firstname:      gourav
+  lastname:       gilhare
+  gender:         male
+  dob:            2004-01-23
+  aadhar:         22222222222
+  mobile_number:  111111111
+  email:          gourav.gilhare@email.com
+  security_pin:   123456789
+  status:         active
+  user_image:     [file upload]
+
+
+1.3 Update User
+---------------
+Method:  POST
+URL:     /users/:userid
+Auth:    Bearer Token Required
+Content: multipart/form-data
+Example: POST /users/1
+
+Description: Updates user information by user ID.
+
+
+1.4 Delete User
+---------------
+Method:  DELETE
+URL:     /users/:userid
+Auth:    Bearer Token Required
+Example: DELETE /users/1
+
+Description: Deletes a user by user ID.
+
+
+================================================================================
+2. RIDER ENDPOINTS
+================================================================================
+
+2.1 Get Rider by ID
+-------------------
+Method:  GET
+URL:     /riders/:riderid
+Auth:    Bearer Token Required
+Example: GET /riders/1
+
+Description: Retrieves rider information by rider ID.
+
+
+2.2 Register Rider
+------------------
+Method:  POST
+URL:     /users/register
+Auth:    Bearer Token Required
+Content: multipart/form-data
+
+Request Body (Form Data):
+  - userId           (text)  : Associated user ID
+  - driving_license  (text)  : Driving license number
+  - firstname        (text)  : First name
+  - lastname         (text)  : Last name
+  - gender           (text)  : Gender
+  - dob              (text)  : Date of birth
+  - aadhar           (text)  : Aadhar number
+  - mobile_number    (text)  : Mobile number
+  - email            (text)  : Email address
+  - image_add        (text)  : Image address/URL
+  - security_pin     (text)  : Security PIN
+  - status           (text)  : Status
+
+Example Request:
+  userId:           2
+  driving_license:  DL-MH-445566
+
+
+2.3 Update Rider
+----------------
+Method:  POST
+URL:     /users/:userid
+Auth:    Bearer Token Required
+Content: multipart/form-data
+Example: POST /users/1
+
+
+2.4 Get Rider by User ID
+-------------------------
+Method:  POST
+URL:     /users/:userid
+Auth:    Bearer Token Required
+Example: POST /users/1
+
+
+2.5 Delete Rider
+----------------
+Method:  DELETE
+URL:     /users/:riderid
+Auth:    Bearer Token Required
+Example: DELETE /users/1
+
+
+================================================================================
+3. VEHICLE ENDPOINTS
+================================================================================
+
+3.1 VEHICLE PRICING
+-------------------
+
+3.1.1 Create Vehicle Pricing
+-----------------------------
+Method:  POST
+URL:     /vehicles/pricing/create
+Auth:    Bearer Token Required
+Content: application/json
+
+Request Body (JSON):
+{
+  "category": "two_wheeler",
+  "base_fare": "25",
+  "per_km": "12",
+  "per_minute": "2",
+  "min_fare": "50",
+  "cancellation_fee": "20"
+}
+
+Description: Creates a new pricing configuration for a vehicle category.
+
+
+3.1.2 Get All Pricing
+---------------------
+Method:  GET
+URL:     /vehicles/pricing/all
+Auth:    None
+
+Description: Retrieves all vehicle pricing configurations.
+
+
+3.1.3 Get Pricing by ID
+-----------------------
+Method:  GET
+URL:     /vehicles/pricing/id/:id
+Auth:    None
+Example: GET /vehicles/pricing/id/1
+
+Description: Retrieves pricing configuration by ID.
+
+
+3.1.4 Get Pricing by Category
+------------------------------
+Method:  GET
+URL:     /vehicles/pricing/category/:category
+Auth:    None
+Example: GET /vehicles/pricing/category/two_wheeler
+
+Description: Retrieves pricing configuration for a specific vehicle category.
+
+
+3.1.5 Update Pricing by ID
+---------------------------
+Method:  PUT
+URL:     /vehicles/pricing/update/id/:id
+Auth:    Bearer Token Required
+Content: application/json
+Example: PUT /vehicles/pricing/update/id/1
+
+Request Body (JSON):
+{
+  "category": "four_wheeler",
+  "base_fare": "50",
+  "per_km": "15",
+  "per_minute": "3",
+  "min_fare": "100",
+  "cancellation_fee": "30"
+}
+
+
+3.1.6 Update Pricing by Category
+---------------------------------
+Method:  PUT
+URL:     /vehicles/pricing/update/category/:category
+Auth:    Bearer Token Required
+Content: application/json
+Example: PUT /vehicles/pricing/update/category/two_wheeler
+
+Request Body (JSON):
+{
+  "category": "two_wheeler",
+  "base_fare": "50",
+  "per_km": "15",
+  "per_minute": "3",
+  "min_fare": "100",
+  "cancellation_fee": "30"
+}
+
+
+3.1.7 Delete Pricing
+--------------------
+Method:  DELETE
+URL:     /vehicles/pricing/delete/:id
+Auth:    Bearer Token Required
+Example: DELETE /vehicles/pricing/delete/1
+
+
+3.1.8 Get Pricing Statistics
+-----------------------------
+Method:  GET
+URL:     /vehicles/pricing/stats
+Auth:    None
+
+Description: Retrieves pricing statistics.
+
+
+3.2 VEHICLE MANAGEMENT
+----------------------
+
+3.2.1 Get Vehicle by ID
+-----------------------
+Method:  GET
+URL:     /vehicles/:vehicleid
+Auth:    Bearer Token Required
+Example: GET /vehicles/1
+
+
+3.2.2 Get Vehicle by Rider ID
+------------------------------
+Method:  GET
+URL:     /vehicles/rider/:riderid
+Auth:    Bearer Token Required
+Example: GET /vehicles/rider/8
+
+
+3.2.3 Update Vehicle
+--------------------
+Method:  PUT
+URL:     /vehicles/update/:vehicleid
+Auth:    Bearer Token Required
+Content: multipart/form-data
+Example: PUT /vehicles/update/2
+
+Request Body (Form Data):
+  - riderId          (text) : Rider ID
+  - category         (text) : Vehicle category (e.g., "bike")
+  - vehicle_type     (text) : Vehicle type (e.g., "twowheeler")
+  - vehicle_name     (text) : Vehicle name/model
+  - vehicle_number   (text) : Vehicle registration number
+  - rc_number        (text) : RC (Registration Certificate) number
+  - owner_name       (text) : Owner's name
+  - owner_contact    (text) : Owner's contact number
+  - driving_license  (text) : Driver's license number
+
+Example Request:
+  riderId:          8
+  category:         bike
+  vehicle_type:     twowheeler
+  vehicle_name:     super splendour
+  vehicle_number:   MP09AB1234
+  rc_number:        RCMP09SHINE1234
+  owner_name:       Rohit Sharma
+  owner_contact:    9876543210
+  driving_license:  DLMP09887766
+
+
+3.2.4 Delete Vehicle
+--------------------
+Method:  DELETE
+URL:     /users/:riderid
+Auth:    Bearer Token Required
+Example: DELETE /users/1
+
+
+================================================================================
+4. TRIP ENDPOINTS
+================================================================================
+
+4.1 Get Trip by ID
+------------------
+Method:  GET
+URL:     /trips/:tripid
+Auth:    None
+Example: GET /trips/1
+
+
+4.2 Assign Trip
+---------------
+Method:  PUT
+URL:     /trips/assign/:tripid
+Auth:    Bearer Token Required
+Content: application/json
+Example: PUT /trips/assign/1
+
+Request Body (JSON):
+{
+  "riderId": 8,
+  "vehicleId": 3
+}
+
+Description: Assigns a rider and vehicle to a trip.
+
+
+4.3 Start Trip
+--------------
+Method:  PUT
+URL:     /trips/start/:tripid
+Auth:    Bearer Token Required
+Content: application/json
+Example: PUT /trips/start/1
+
+Request Body (JSON):
+{
+  "riderId": 8,
+  "vehicleId": 3
+}
+
+Description: Starts a trip.
+
+
+4.4 Update Trip
+---------------
+Method:  PUT
+URL:     /trips/start/:tripid
+Auth:    Bearer Token Required
+Content: application/json
+Example: PUT /trips/start/1
+
+Request Body (JSON):
+{
+  "riderId": 8,
+  "vehicleId": 3
+}
+
+
+4.5 Complete Trip
+-----------------
+Method:  PUT
+URL:     /trips/complete/:tripid
+Auth:    Bearer Token Required
+Content: application/json
+Example: PUT /trips/complete/1
+
+Request Body (JSON):
+{
+  "total_fare": 1500
+}
+
+Description: Marks a trip as completed and sets the final fare.
+
+
+4.6 Cancel Trip
+---------------
+Method:  PUT
+URL:     /trips/complete/:tripid
+Auth:    Bearer Token Required
+Content: application/json
+Example: PUT /trips/complete/1
+
+Request Body (JSON):
+{
+  "total_fare": 1500
+}
+
+Description: Cancels a trip.
+
+
+================================================================================
+5. LOCATION ENDPOINTS
+================================================================================
+
+5.1 Update Live Location
+------------------------
+Method:  POST
+URL:     /location/live/update
+Auth:    Bearer Token Required
+Content: application/json
+
+Request Body (JSON):
+{
+  "entity_id": 101,
+  "entity_type": "rider",
+  "latitude": 12.9716,
+  "longitude": 77.5946
+}
+
+Description: Updates live location for a rider or user.
+
+
+5.2 Get Live Location
+---------------------
+Method:  GET
+URL:     /location/live/:entity_type/:entity_id
+Auth:    Bearer Token Required
+Example: GET /location/live/rider/101
+
+Description: Retrieves the live location of a rider or user.
+
+
+5.3 Add Location History
+-------------------------
+Method:  POST
+URL:     /location/history/add
+Auth:    Bearer Token Required
+Content: application/json
+
+Request Body (JSON):
+{
+  "trip_id": 5001,
+  "rider_id": 101,
+  "latitude": 12.9716000,
+  "longitude": 77.5946000,
+  "distance_meters": 25.4
+}
+
+Description: Adds a location history entry for a trip.
+
+
+================================================================================
+6. DOCUMENT EXTRACTION ENDPOINTS
+================================================================================
+
+6.1 Extract Insurance Document
+-------------------------------
+Method:  POST
+URL:     /extract/insurance
+Auth:    Bearer Token Required
+Content: multipart/form-data
+
+Request Body (Form Data):
+  - document (file) : Insurance document (PDF or image)
+
+Description: Extracts information from insurance documents using OCR/AI.
+
+
+6.2 Extract RC Card
+--------------------
+Method:  POST
+URL:     /extract/rc-card
+Auth:    Bearer Token Required
+Content: multipart/form-data
+
+Request Body (Form Data):
+  - document (file) : RC (Registration Certificate) card image
+
+Description: Extracts information from RC card documents.
+
+
+6.3 Extract Driving License
+----------------------------
+Method:  POST
+URL:     /extract/driving-license
+Auth:    Bearer Token Required
+Content: multipart/form-data
+
+Request Body (Form Data):
+  - document (file) : Driving license image
+
+Description: Extracts information from driving license documents.
+
+
+6.4 Extract Number Plate
+-------------------------
+Method:  POST
+URL:     /extract/number-plate
+Auth:    Bearer Token Required
+Content: multipart/form-data
+
+Request Body (Form Data):
+  - document (file) : Vehicle number plate image
+
+Description: Extracts vehicle number from number plate images.
+
+
+================================================================================
+7. ADMIN ENDPOINTS
+================================================================================
+
+7.1 Send OTP (Admin)
+--------------------
+Method:  POST
+URL:     /admin/send-otp
+Auth:    Bearer Token Required
+Content: application/json
+
+Request Body (JSON):
+{
+  "mobile": "+91xxxxxxxxxx",
+  "email": "xxxxxxx@ssipmt.com"
+}
+
+Description: Sends OTP to admin's mobile and email for authentication.
+
+
+7.2 Verify OTP (Admin)
+-----------------------
+Method:  POST
+URL:     /auth/admin/login
+Auth:    Bearer Token Required
+Content: application/json
+
+Request Body (JSON):
+{
+  "email": "admin@paylift.com",
+  "password": "admin123",
+  "mobile": "xxxxxxx"
+}
+
+
+7.3 Get All Users (Admin)
+--------------------------
+Method:  GET
+URL:     /admin/users
+Auth:    Bearer Token Required
+
+Description: Retrieves all users in the system (admin only).
+
+
+7.4 Get All Riders (Admin)
+---------------------------
+Method:  GET
+URL:     /admin/riders
+Auth:    Bearer Token Required
+
+Description: Retrieves all riders in the system (admin only).
+
+
+7.5 Get All Vehicles (Admin)
+-----------------------------
+Method:  GET
+URL:     /admin/riders
+Auth:    Bearer Token Required
+
+Description: Retrieves all vehicles in the system (admin only).
+
+
+7.6 Get All Trips (Admin)
+--------------------------
+Method:  GET
+URL:     /admin/riders
+Auth:    Bearer Token Required
+
+Description: Retrieves all trips in the system (admin only).
+
+
+================================================================================
+8. AUTHENTICATION ENDPOINTS
+================================================================================
+
+8.1 Send OTP
+------------
+Method:  POST
+URL:     /auth/send-otp
+Auth:    None
+Content: application/json
+
+Request Body (JSON):
+{
+  "mobile": "9876543210"
+}
+
+Description: Sends OTP to the specified mobile number for authentication.
+
+
+8.2 Verify OTP
+--------------
+Method:  POST
+URL:     /auth/send-otp
+Auth:    None
+Content: application/json
+
+Request Body (JSON):
+{
+  "mobile": "9876543210"
+}
+
+Description: Verifies the OTP sent to the mobile number.
+
+
+8.3 Refresh Token
+-----------------
+Method:  POST
+URL:     /auth/refresh-token
+Auth:    None
+Content: application/json
+
+Request Body (JSON):
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+
+Description: Refreshes the access token using a valid refresh token.
+
+
+8.4 Logout
+----------
+Method:  POST
+URL:     /auth/refresh-token
+Auth:    None
+Content: application/json
+
+Request Body (JSON):
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+
+Description: Logs out the user and invalidates the refresh token.
+
+
+8.5 Admin Send OTP
+------------------
+Method:  POST
+URL:     /auth/admin/login
+Auth:    Bearer Token Required
+Content: application/json
+
+Request Body (JSON):
+{
+  "email": "admin@paylift.com",
+  "password": "admin123",
+  "mobile": "8103013661"
+}
+
+Description: Admin login endpoint.
+
+
+8.6 Admin Verify OTP
+--------------------
+Method:  POST
+URL:     /auth/admin/verify-otp
+Auth:    Bearer Token Required
+Content: application/json
+
+Request Body (JSON):
+{
+  "otp": "285143",
+  "mobile": "+918103013661"
+}
+
+Description: Verifies admin OTP for authentication.
+
+
+================================================================================
+9. MAPS ENDPOINTS
+================================================================================
+
+9.1 Get Route
+-------------
+Method:  POST
+URL:     /maps/route
+Auth:    Bearer Token Required
+Content: application/json
+
+Request Body (JSON):
+{
+  "origin": {
+    "lat": 21.251384,
+    "lng": 81.629641
+  },
+  "destination": {
+    "lat": 21.17945,
+    "lng": 81.35365
+  }
+}
+
+Description: Calculates route between origin and destination coordinates.
+
+
+9.2 Get Distance Matrix
+------------------------
+Method:  POST
+URL:     /maps/distance-matrix
+Auth:    None
+Content: application/json
+
+Request Body (JSON):
+{
+  "origins": [
+    {
+      "lat": 40.7128,
+      "lng": -74.0060
+    }
+  ],
+  "destinations": [
+    {
+      "lat": 42.3601,
+      "lng": -71.0589
+    }
+  ]
+}
+
+Description: Calculates distances between multiple origins and destinations.
+
+
+9.3 Place Autocomplete
+-----------------------
+Method:  GET
+URL:     /maps/places/autocomplete?input=<search_text>
+Auth:    None
+Example: GET /maps/places/autocomplete?input=fafadih
+
+Query Parameters:
+  - input (string) : Search text for place autocomplete
+
+Description: Returns place suggestions based on input text.
+
+
+9.4 Get Place Details
+----------------------
+Method:  GET
+URL:     /maps/places/details?placeId=<place_id>
+Auth:    None
+Example: GET /maps/places/details?placeId=ChIJEchLzIbdKDoRxEX5BzaseNk
+
+Query Parameters:
+  - placeId (string) : Google Places API place ID
+
+Description: Retrieves detailed information about a place.
+
+
+================================================================================
+10. ROOT ENDPOINT
+================================================================================
+
+10.1 Health Check
+-----------------
+Method:  GET
+URL:     /
+Auth:    None
+
+Description: API health check endpoint.
+
+
+================================================================================
+COMMON HTTP STATUS CODES
+================================================================================
+
+200 OK                  : Request successful
+201 Created             : Resource created successfully
+400 Bad Request         : Invalid request parameters
+401 Unauthorized        : Authentication required or invalid token
+403 Forbidden           : Access denied
+404 Not Found           : Resource not found
+500 Internal Server Error : Server error
+
+
+================================================================================
+NOTES
+================================================================================
+
+1. All timestamps should be in ISO 8601 format
+2. Bearer tokens typically expire after 15 minutes (900 seconds)
+3. Refresh tokens are valid for 30 days
+4. Mobile numbers should include country code (e.g., +91 for India)
+5. File uploads support JPEG, PNG, and PDF formats
+6. Maximum file upload size: (Check with backend configuration)
+7. Rate limiting may apply to certain endpoints
+
+
+================================================================================
+END OF DOCUMENTATION
+================================================================================

@@ -8,6 +8,8 @@ const storage = new Storage({
 });
 
 const bucket = storage.bucket(process.env.GCS_BUCKET_NAME);
+if (bucket) console.log("Multer config successfully");
+else console.error("Multer config fails!!");
 
 // ---------- Multer Setup (Memory Storage) ----------
 const upload = multer({
