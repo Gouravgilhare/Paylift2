@@ -3,7 +3,7 @@
 -- MySQL (8.0+ recommended)
 -- ======================================================================
 
-DROP DATABASE IF EXISTS paylift_db;
+-- DROP DATABASE IF EXISTS paylift_db;
 CREATE DATABASE paylift_db CHARACTER SET = 'utf8mb4' COLLATE = 'utf8mb4_unicode_ci';
 USE paylift_db;
 
