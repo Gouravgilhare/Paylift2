@@ -11,6 +11,11 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 20, // Increased for production usage
   queueLimit: 0,
+  ssl:{
+    ca: fs.readFilesSync("server-ca.pem"), 
+    cert: fs.readFilesSync("client-cert.pem"), 
+    key: fs.readFilesSync("client-key.pem"), 
+  }
 });
 
 // Immediately test the database connection
